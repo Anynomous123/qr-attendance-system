@@ -20,6 +20,18 @@ c.execute('''CREATE TABLE IF NOT EXISTS attendance
 c.execute('''CREATE TABLE IF NOT EXISTS sessions
              (token TEXT, subject TEXT, expiry TEXT)''')
 
+# NEW: session count table
+c.execute('''CREATE TABLE IF NOT EXISTS session_count
+             (subject TEXT, date TEXT)''')
+
+conn.commit()
+
+# -------------------------
+# AUTO CLEAN EXPIRED SESSIONS
+# -------------------------
+
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+c.execute("DELETE FROM sessions WHERE expiry < ?", (current_time,))
 conn.commit()
 
 # -------------------------
@@ -62,7 +74,7 @@ else:
 # MAIN TITLE
 # -------------------------
 
-st.title("📚 QR Based Attendance System")
+st.title("📚 QR Based Attendance System – Physics Department")
 
 # ============================================================
 # =================== TEACHER DASHBOARD ======================
@@ -72,7 +84,17 @@ if st.session_state["logged_in"]:
 
     st.sidebar.header("Teacher Panel")
 
-    subject = st.sidebar.text_input("Enter Subject Name")
+    subjects = [
+        "Classical Mechanics",
+        "Quantum Mechanics",
+        "Electrodynamics",
+        "Mathematical Physics",
+        "Nuclear Physics",
+        "Solid State Physics"
+    ]
+
+    subject = st.sidebar.selectbox("Select Subject", subjects)
+
     duration = st.sidebar.number_input(
         "QR Valid Duration (minutes)",
         min_value=1,
@@ -90,6 +112,11 @@ if st.session_state["logged_in"]:
         c.execute("INSERT INTO sessions VALUES (?,?,?)",
                   (token, subject,
                    expiry.strftime("%Y-%m-%d %H:%M:%S")))
+
+        # NEW: Track session count
+        c.execute("INSERT INTO session_count VALUES (?, ?)",
+                  (subject, datetime.now().strftime("%Y-%m-%d")))
+
         conn.commit()
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
@@ -113,6 +140,42 @@ if st.session_state["logged_in"]:
 
     df = pd.read_sql_query("SELECT * FROM attendance", conn)
     st.dataframe(df)
+
+    # -------- Attendance Percentage --------
+
+    st.subheader("Attendance Percentage Summary")
+
+    if not df.empty:
+
+        sessions_df = pd.read_sql_query("SELECT * FROM session_count", conn)
+
+        if not sessions_df.empty:
+
+            total_sessions = (
+                sessions_df.groupby("subject")
+                .size()
+                .reset_index(name="Total_Classes")
+            )
+
+            attendance_count = (
+                df.groupby(["roll", "subject"])
+                .size()
+                .reset_index(name="Classes_Attended")
+            )
+
+            merged = attendance_count.merge(total_sessions, on="subject")
+
+            merged["Attendance_%"] = (
+                merged["Classes_Attended"] /
+                merged["Total_Classes"] * 100
+            ).round(2)
+
+            st.dataframe(merged)
+
+        else:
+            st.info("No sessions conducted yet.")
+
+    # -------- Download --------
 
     st.subheader("Download Attendance")
 
