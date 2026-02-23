@@ -4,9 +4,12 @@ import pandas as pd
 import uuid
 import io
 from datetime import datetime, timedelta
+import plotly.express as px
 
 import gspread
 from google.oauth2.service_account import Credentials
+
+st.set_page_config(page_title="QR Attendance System", layout="wide")
 
 # ============================================================
 # GOOGLE SHEETS SETUP
@@ -23,12 +26,25 @@ creds = Credentials.from_service_account_info(
 )
 
 client = gspread.authorize(creds)
-
 sheet = client.open("Physics_Attendance_DB")
 
 attendance_sheet = sheet.worksheet("attendance")
 sessions_sheet = sheet.worksheet("sessions")
 session_count_sheet = sheet.worksheet("session_count")
+
+
+# ============================================================
+# SAFE DATAFRAME LOADER (Prevents KeyError)
+# ============================================================
+
+def load_sheet_safe(worksheet, required_columns):
+    data = worksheet.get_all_records()
+    if data:
+        df = pd.DataFrame(data)
+    else:
+        df = pd.DataFrame(columns=required_columns)
+    return df
+
 
 # ============================================================
 # FACULTY LOGIN SYSTEM
@@ -53,7 +69,6 @@ def login():
 
 def logout():
     st.session_state["logged_in"] = False
-    st.sidebar.success("Logged out")
 
 
 if "logged_in" not in st.session_state:
@@ -62,9 +77,10 @@ if "logged_in" not in st.session_state:
 if not st.session_state["logged_in"]:
     login()
 else:
-    st.sidebar.write(f"Logged in as: {st.session_state['faculty_name']}")
+    st.sidebar.success(f"Logged in as: {st.session_state['faculty_name']}")
     if st.sidebar.button("Logout"):
         logout()
+
 
 # ============================================================
 # MAIN TITLE
@@ -90,15 +106,11 @@ if st.session_state["logged_in"]:
     ]
 
     subject = st.sidebar.selectbox("Select Subject", subjects)
-
-    duration = st.sidebar.number_input(
-        "QR Valid Duration (minutes)",
-        min_value=1,
-        max_value=60,
-        value=5
-    )
+    duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
 
     st.header("Faculty Dashboard")
+
+    # ---------------- QR GENERATION ----------------
 
     if st.sidebar.button("Generate QR"):
 
@@ -116,74 +128,131 @@ if st.session_state["logged_in"]:
             datetime.now().strftime("%Y-%m-%d")
         ])
 
-        app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
+        app_url = "YOUR_STREAMLIT_APP_URL"
         qr_data = f"{app_url}/?token={token}"
 
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-
-        img = qr.make_image(fill_color="black", back_color="white")
+        qr = qrcode.make(qr_data)
 
         buf = io.BytesIO()
-        img.save(buf, format="PNG")
+        qr.save(buf, format="PNG")
         buf.seek(0)
 
         st.image(buf, caption="Scan to Mark Attendance")
 
-    # ----------------- Live Attendance -----------------
+    # ---------------- LOAD DATA SAFELY ----------------
+
+    df = load_sheet_safe(
+        attendance_sheet,
+        ["roll", "name", "subject", "timestamp", "token"]
+    )
+
+    sessions_df = load_sheet_safe(
+        session_count_sheet,
+        ["subject", "date"]
+    )
 
     st.subheader("Live Attendance Record")
+    st.dataframe(df, use_container_width=True)
 
-    df = pd.DataFrame(attendance_sheet.get_all_records())
-    st.dataframe(df)
+    # ============================================================
+    # ATTENDANCE PERCENTAGE
+    # ============================================================
 
-    # ----------------- Attendance Percentage -----------------
+    if not df.empty and not sessions_df.empty:
 
-    st.subheader("Attendance Percentage Summary")
+        total_sessions = (
+            sessions_df.groupby("subject")
+            .size()
+            .reset_index(name="Total_Classes")
+        )
 
-    if not df.empty:
+        attendance_count = (
+            df.groupby(["roll", "subject"])
+            .size()
+            .reset_index(name="Classes_Attended")
+        )
 
-        sessions_df = pd.DataFrame(session_count_sheet.get_all_records())
+        merged = attendance_count.merge(total_sessions, on="subject")
+        merged["Attendance_%"] = (
+            merged["Classes_Attended"] /
+            merged["Total_Classes"] * 100
+        ).round(2)
 
-        if not sessions_df.empty:
+        st.subheader("Attendance Percentage Summary")
+        st.dataframe(merged, use_container_width=True)
 
-            total_sessions = (
-                sessions_df.groupby("subject")
-                .size()
-                .reset_index(name="Total_Classes")
-            )
+        # ============================================================
+        # ANALYTICS DASHBOARD
+        # ============================================================
 
-            attendance_count = (
-                df.groupby(["roll", "subject"])
-                .size()
-                .reset_index(name="Classes_Attended")
-            )
+        st.divider()
+        st.header("📊 Attendance Analytics Dashboard")
 
-            merged = attendance_count.merge(total_sessions, on="subject")
+        # Subject filter
+        selected_subject = st.selectbox(
+            "Filter by Subject",
+            ["All"] + list(total_sessions["subject"].unique())
+        )
 
-            merged["Attendance_%"] = (
-                merged["Classes_Attended"] /
-                merged["Total_Classes"] * 100
-            ).round(2)
-
-            st.dataframe(merged)
-
+        if selected_subject != "All":
+            merged_filtered = merged[merged["subject"] == selected_subject]
         else:
-            st.info("No sessions conducted yet.")
+            merged_filtered = merged
 
-    # ----------------- Download -----------------
+        # 1️⃣ Subject-wise Total Classes
+        fig1 = px.bar(
+            total_sessions,
+            x="subject",
+            y="Total_Classes",
+            title="Total Classes per Subject"
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
-    st.subheader("Download Attendance")
+        # 2️⃣ Student Attendance %
+        fig2 = px.bar(
+            merged_filtered,
+            x="roll",
+            y="Attendance_%",
+            color="subject",
+            title="Student Attendance Percentage"
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
+        # 3️⃣ Daily Trend
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["date"] = df["timestamp"].dt.date
+
+        daily_count = (
+            df.groupby("date")
+            .size()
+            .reset_index(name="Total_Attendance")
+        )
+
+        fig3 = px.line(
+            daily_count,
+            x="date",
+            y="Total_Attendance",
+            markers=True,
+            title="Daily Attendance Trend"
+        )
+        st.plotly_chart(fig3, use_container_width=True)
+
+        # 4️⃣ Low Attendance Warning
+        st.subheader("⚠️ Students Below 75% Attendance")
+        low_attendance = merged_filtered[merged_filtered["Attendance_%"] < 75]
+
+        if not low_attendance.empty:
+            st.dataframe(low_attendance)
+        else:
+            st.success("All students above 75% attendance 🎉")
+
+    # Download
     if not df.empty:
-        csv_data = df.to_csv(index=False).encode("utf-8")
-
         st.download_button(
-            label="Download Attendance CSV",
-            data=csv_data,
-            file_name="attendance.csv",
-            mime="text/csv",
+            "Download Attendance CSV",
+            df.to_csv(index=False).encode("utf-8"),
+            "attendance.csv",
+            "text/csv"
         )
 
 # ============================================================
@@ -193,67 +262,59 @@ if st.session_state["logged_in"]:
 st.divider()
 st.header("Student Attendance")
 
-query_params = st.query_params
-token_from_url = query_params.get("token")
+token_from_url = st.query_params.get("token")
 
 if token_from_url:
 
-    sessions_data = sessions_sheet.get_all_records()
-    sessions_df = pd.DataFrame(sessions_data)
+    sessions_df = load_sheet_safe(
+        sessions_sheet,
+        ["token", "subject", "expiry"]
+    )
 
-    if not sessions_df.empty:
+    session_row = sessions_df[sessions_df["token"] == token_from_url]
 
-        session_row = sessions_df[sessions_df["token"] == token_from_url]
+    if not session_row.empty:
 
-        if not session_row.empty:
+        subject_db = session_row.iloc[0]["subject"]
+        expiry_db = session_row.iloc[0]["expiry"]
+        expiry_time = datetime.strptime(expiry_db, "%Y-%m-%d %H:%M:%S")
 
-            subject_db = session_row.iloc[0]["subject"]
-            expiry_db = session_row.iloc[0]["expiry"]
-            expiry_time = datetime.strptime(expiry_db, "%Y-%m-%d %H:%M:%S")
+        if datetime.now() <= expiry_time:
 
-            if datetime.now() <= expiry_time:
+            st.subheader(f"Subject: {subject_db}")
 
-                st.subheader(f"Subject: {subject_db}")
+            roll = st.text_input("Roll Number")
+            name = st.text_input("Name")
 
-                roll = st.text_input("Roll Number")
-                name = st.text_input("Name")
+            if st.button("Submit Attendance"):
 
-                if st.button("Submit Attendance"):
+                attendance_df = load_sheet_safe(
+                    attendance_sheet,
+                    ["roll", "name", "subject", "timestamp", "token"]
+                )
 
-                    #attendance_data = attendance_sheet.get_all_records()
-                    #attendance_df = pd.DataFrame(attendance_data)
-                    attendance_data = attendance_sheet.get_all_records()
-                    attendance_df = pd.DataFrame(attendance_data)
+                already_marked = attendance_df[
+                    (attendance_df["roll"] == roll) &
+                    (attendance_df["token"] == token_from_url)
+                ]
 
-                    if attendance_df.empty:
-                    	attendance_df = pd.DataFrame(
-        					columns=["roll", "name", "subject", "timestamp", "token"]
-   	 					)
-
-                    already_marked = attendance_df[
-                        (attendance_df["roll"] == roll) &
-                        (attendance_df["token"] == token_from_url)
-                    ]
-
-                    if not already_marked.empty:
-                        st.warning("Attendance already marked!")
-                    else:
-                        attendance_sheet.append_row([
-                            roll,
-                            name,
-                            subject_db,
-                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            token_from_url
-                        ])
-                        st.success("Attendance Marked Successfully!")
-
-            else:
-                st.error("QR Expired!")
+                if not already_marked.empty:
+                    st.warning("Attendance already marked!")
+                else:
+                    attendance_sheet.append_row([
+                        roll,
+                        name,
+                        subject_db,
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        token_from_url
+                    ])
+                    st.success("Attendance Marked Successfully!")
 
         else:
-            st.error("Invalid QR!")
+            st.error("QR Expired!")
+
     else:
-        st.error("No active sessions found.")
+        st.error("Invalid QR!")
 
 else:
     st.info("Please scan a valid QR code to mark attendance.")
