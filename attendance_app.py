@@ -222,6 +222,13 @@ if token_from_url:
 
                     attendance_data = attendance_sheet.get_all_records()
                     attendance_df = pd.DataFrame(attendance_data)
+                    attendance_data = attendance_sheet.get_all_records()
+                    attendance_df = pd.DataFrame(attendance_data)
+
+                    if attendance_df.empty:
+                    	attendance_df = pd.DataFrame(
+        					columns=["roll", "name", "subject", "timestamp", "token"]
+   	 					)
 
                     already_marked = attendance_df[
                         (attendance_df["roll"] == roll) &
