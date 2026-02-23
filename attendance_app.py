@@ -64,9 +64,26 @@ if st.sidebar.button("Generate QR"):
 
     app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"  # your actual URL
     qr_data = f"{app_url}/?token={token}"
+    import io
 
-    img = qrcode.make(qr_data)
-    st.image(img, caption="Scan to Mark Attendance")
+    qr = qrcode.QRCode(
+    version=1,
+    box_size=10,
+    border=5
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    st.image(buf, caption="Scan to Mark Attendance")
+    
+
+    #img = qrcode.make(qr_data)
+    #st.image(img, caption="Scan to Mark Attendance")
 
 # Student Section
 #query_params = st.query_params
