@@ -220,8 +220,8 @@ if token_from_url:
 
                 if st.button("Submit Attendance"):
 
-                    attendance_data = attendance_sheet.get_all_records()
-                    attendance_df = pd.DataFrame(attendance_data)
+                    #attendance_data = attendance_sheet.get_all_records()
+                    #attendance_df = pd.DataFrame(attendance_data)
                     attendance_data = attendance_sheet.get_all_records()
                     attendance_df = pd.DataFrame(attendance_data)
 
