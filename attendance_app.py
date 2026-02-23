@@ -160,27 +160,27 @@ if token_from_url:
 #st.subheader("Live Attendance Record")
 
 #df = pd.read_sql_query("SELECT * FROM attendance", conn)
+
 #st.dataframe(df)
 
 #if st.button("Download CSV"):
- #   csv = df.to_csv(index=False).encode('utf-8')
-  #  st.download_button(
-   # 	label="Download Attendance CSV",
-    #	data=csv,
-    #	file_name="attendance.csv",
-    #	mime="text/csv"
-    #)
-    #df.to_csv("attendance.csv", index=False)
-    #st.success("CSV Saved as attendance.csv")
+    #csv = df.to_csv(index=False).encode('utf-8')
+    
+    #st.download_button(
+   #	label="Download Attendance CSV",
+  #	data=csv,
+  #	file_name="attendance.csv",
+  #	mime="text/csv"
+  #  )
+ #   #df.to_csv("attendance.csv", index=False)
+#    st.success("CSV Saved as attendance.csv")
     
 
+# Live Attendance Display
+st.subheader("Live Attendance Record")
 
-#st.download_button(
- #   label="Download Attendance CSV",
-  #  data=csv,
-   # file_name="attendance.csv",
-    #mime="text/csv"
-#)
+df = pd.read_sql_query("SELECT * FROM attendance", conn)
+st.dataframe(df)
 
 st.subheader("Download Attendance")
 
@@ -195,3 +195,4 @@ if not df.empty:
     )
 else:
     st.info("No attendance records yet.")
+
