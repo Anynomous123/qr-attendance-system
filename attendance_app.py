@@ -29,8 +29,8 @@ if st.sidebar.button("Generate QR"):
     st.session_state["token"] = token
     st.session_state["expiry"] = expiry
     st.session_state["subject"] = subject
-
-    qr_data = f"?token={token}" 
+    app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
+    qr_data = f"{app_url}/?token={token}" 
     import io
 
     qr = qrcode.QRCode(
