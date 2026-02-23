@@ -1,4 +1,42 @@
 import streamlit as st
+##########################################################################
+import streamlit as st
+
+# -------------------------
+# Faculty Login System
+# -------------------------
+
+def login():
+    st.sidebar.subheader("Faculty Login")
+
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
+
+    if st.sidebar.button("Login"):
+        faculty_users = st.secrets["FACULTY_USERS"]
+
+        if username in faculty_users and faculty_users[username] == password:
+            st.session_state["logged_in"] = True
+            st.session_state["faculty_name"] = username
+            st.sidebar.success("Login Successful")
+        else:
+            st.sidebar.error("Invalid Credentials")
+
+
+def logout():
+    st.session_state["logged_in"] = False
+    st.sidebar.success("Logged out")
+##############################################################################
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+if not st.session_state["logged_in"]:
+    login()
+else:
+    st.sidebar.write(f"Logged in as: {st.session_state['faculty_name']}")
+    if st.sidebar.button("Logout"):
+        logout()
+############################################################################
 import qrcode
 import sqlite3
 import pandas as pd
@@ -52,34 +90,42 @@ duration = st.sidebar.number_input("QR Valid Duration (minutes)", min_value=1, m
     #buf.seek(0)
 
     #st.image(buf, caption="Scan to Mark Attendance")
-    
-if st.sidebar.button("Generate QR"):
-    token = str(uuid.uuid4())
-    expiry = datetime.now() + timedelta(minutes=duration)
 
-    c.execute("INSERT INTO sessions VALUES (?,?,?)",
-              (token, subject,
-               expiry.strftime("%Y-%m-%d %H:%M:%S")))
-    conn.commit()
 
-    app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"  # your actual URL
-    qr_data = f"{app_url}/?token={token}"
-    import io
+if st.session_state["logged_in"]:
 
-    qr = qrcode.QRCode(
-    version=1,
-    box_size=10,
-    border=5
-    )
-    qr.add_data(qr_data)
-    qr.make(fit=True)
+    st.header("Faculty Dashboard")
 
-    img = qr.make_image(fill_color="black", back_color="white")
+    # QR generation code here
+    # Attendance table
+    # Download CSV    
+	if st.sidebar.button("Generate QR"):
+		token = str(uuid.uuid4())
+		expiry = datetime.now() + timedelta(minutes=duration)
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    buf.seek(0)
-    st.image(buf, caption="Scan to Mark Attendance")
+		c.execute("INSERT INTO sessions VALUES (?,?,?)",
+		          (token, subject,
+		           expiry.strftime("%Y-%m-%d %H:%M:%S")))
+		conn.commit()
+
+		app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"  # your actual URL
+		qr_data = f"{app_url}/?token={token}"
+		import io
+
+		qr = qrcode.QRCode(
+		version=1,
+		box_size=10,
+		border=5
+		)
+		qr.add_data(qr_data)
+		qr.make(fit=True)
+
+		img = qr.make_image(fill_color="black", back_color="white")
+
+		buf = io.BytesIO()
+		img.save(buf, format="PNG")
+		buf.seek(0)
+		st.image(buf, caption="Scan to Mark Attendance")
     
 
     #img = qrcode.make(qr_data)
@@ -117,44 +163,44 @@ if st.sidebar.button("Generate QR"):
        # st.error("Invalid QR!")
         
         
-query_params = st.experimental_get_query_params()
-token_from_url = query_params.get("token", [None])[0]
+	query_params = st.experimental_get_query_params()
+	token_from_url = query_params.get("token", [None])[0]
 
-if token_from_url:
-    c.execute("SELECT subject, expiry FROM sessions WHERE token=?",
-              (token_from_url,))
-    session = c.fetchone()
+	if token_from_url:
+		c.execute("SELECT subject, expiry FROM sessions WHERE token=?",
+		          (token_from_url,))
+		session = c.fetchone()
 
-    if session:
-        subject_db, expiry_db = session
-        expiry_time = datetime.strptime(expiry_db, "%Y-%m-%d %H:%M:%S")
+		if session:
+		    subject_db, expiry_db = session
+		    expiry_time = datetime.strptime(expiry_db, "%Y-%m-%d %H:%M:%S")
 
-        if datetime.now() <= expiry_time:
+		    if datetime.now() <= expiry_time:
 
-            st.subheader("Mark Your Attendance")
+		        st.subheader("Mark Your Attendance")
 
-            roll = st.text_input("Roll Number")
-            name = st.text_input("Name")
+		        roll = st.text_input("Roll Number")
+		        name = st.text_input("Name")
 
-            if st.button("Submit Attendance"):
+		        if st.button("Submit Attendance"):
 
-                c.execute("SELECT * FROM attendance WHERE roll=? AND token=?",
-                          (roll, token_from_url))
+		            c.execute("SELECT * FROM attendance WHERE roll=? AND token=?",
+		                      (roll, token_from_url))
 
-                if c.fetchone():
-                    st.warning("Attendance already marked!")
-                else:
-                    c.execute("INSERT INTO attendance VALUES (?,?,?,?,?)",
-                              (roll, name,
-                               subject_db,
-                               datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                               token_from_url))
-                    conn.commit()
-                    st.success("Attendance Marked Successfully!")
-        else:
-            st.error("QR Expired!")
-    else:
-        st.error("Invalid QR!")        
+		            if c.fetchone():
+		                st.warning("Attendance already marked!")
+		            else:
+		                c.execute("INSERT INTO attendance VALUES (?,?,?,?,?)",
+		                          (roll, name,
+		                           subject_db,
+		                           datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+		                           token_from_url))
+		                conn.commit()
+		                st.success("Attendance Marked Successfully!")
+		    else:
+		        st.error("QR Expired!")
+		else:
+		    st.error("Invalid QR!")        
 
 # Live Attendance Display
 #st.subheader("Live Attendance Record")
@@ -177,22 +223,22 @@ if token_from_url:
     
 
 # Live Attendance Display
-st.subheader("Live Attendance Record")
+	st.subheader("Live Attendance Record")
 
-df = pd.read_sql_query("SELECT * FROM attendance", conn)
-st.dataframe(df)
+	df = pd.read_sql_query("SELECT * FROM attendance", conn)
+	st.dataframe(df)
 
-st.subheader("Download Attendance")
+	st.subheader("Download Attendance")
 
-if not df.empty:
-    csv_data = df.to_csv(index=False).encode("utf-8")
+	if not df.empty:
+		csv_data = df.to_csv(index=False).encode("utf-8")
 
-    st.download_button(
-        label="Download Attendance CSV",
-        data=csv_data,
-        file_name="attendance.csv",
-        mime="text/csv",
-    )
-else:
-    st.info("No attendance records yet.")
+		st.download_button(
+		    label="Download Attendance CSV",
+		    data=csv_data,
+		    file_name="attendance.csv",
+		    mime="text/csv",
+		)
+	else:
+		st.info("No attendance records yet.")
 
