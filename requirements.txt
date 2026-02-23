@@ -2,3 +2,5 @@ streamlit==1.30.0
 pandas
 qrcode[pil]
 Pillow
+gspread
+google-auth
