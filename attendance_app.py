@@ -30,9 +30,7 @@ if st.sidebar.button("Generate QR"):
     st.session_state["expiry"] = expiry
     st.session_state["subject"] = subject
 
-    qr_data = f"?token={token}" #f"http://localhost:8501/?token={token}"
-    #img = qrcode.make(qr_data)
-   # st.image(img, caption="Scan to Mark Attendance")
+    qr_data = f"?token={token}" 
     import io
 
     qr = qrcode.QRCode(
