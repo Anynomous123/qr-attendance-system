@@ -128,7 +128,7 @@ if st.session_state["logged_in"]:
             datetime.now().strftime("%Y-%m-%d")
         ])
 
-        app_url = "YOUR_STREAMLIT_APP_URL"
+        app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
         qr_data = f"{app_url}/?token={token}"
 
         qr = qrcode.make(qr_data)
