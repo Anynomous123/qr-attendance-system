@@ -157,6 +157,123 @@ if st.session_state["logged_in"]:
         buf.seek(0)
 
         st.image(buf, caption="Scan to Mark Attendance")
+        
+# ============================================================
+# LOAD DATA FOR ANALYTICS
+# ============================================================
+
+df = load_sheet_safe(
+    attendance_sheet,
+    ["roll", "name", "subject", "timestamp", "token"]
+)
+
+sessions_df = load_sheet_safe(
+    session_count_sheet,
+    ["subject", "date"]
+)
+
+st.subheader("📋 Live Attendance Record")
+st.dataframe(df, use_container_width=True)
+
+# ============================================================
+# ATTENDANCE PERCENTAGE CALCULATION
+# ============================================================
+
+if not df.empty and not sessions_df.empty:
+
+    total_sessions = (
+        sessions_df.groupby("subject")
+        .size()
+        .reset_index(name="Total_Classes")
+    )
+
+    attendance_count = (
+        df.groupby(["roll", "subject"])
+        .size()
+        .reset_index(name="Classes_Attended")
+    )
+
+    merged = attendance_count.merge(total_sessions, on="subject")
+    merged["Attendance_%"] = (
+        merged["Classes_Attended"] /
+        merged["Total_Classes"] * 100
+    ).round(2)
+
+    st.subheader("📊 Attendance Percentage Summary")
+    st.dataframe(merged, use_container_width=True)
+
+    # ============================================================
+    # ANALYTICS DASHBOARD
+    # ============================================================
+
+    st.divider()
+    st.header("📈 Attendance Analytics Dashboard")
+
+    selected_subject = st.selectbox(
+        "Filter by Subject",
+        ["All"] + list(total_sessions["subject"].unique())
+    )
+
+    if selected_subject != "All":
+        merged_filtered = merged[merged["subject"] == selected_subject]
+    else:
+        merged_filtered = merged
+
+    # 1️⃣ Total Classes Per Subject
+    fig1 = px.bar(
+        total_sessions,
+        x="subject",
+        y="Total_Classes",
+        title="Total Classes per Subject"
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+
+    # 2️⃣ Student Attendance %
+    fig2 = px.bar(
+        merged_filtered,
+        x="roll",
+        y="Attendance_%",
+        color="subject",
+        title="Student Attendance Percentage"
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # 3️⃣ Daily Trend
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["date"] = df["timestamp"].dt.date
+
+    daily_count = (
+        df.groupby("date")
+        .size()
+        .reset_index(name="Total_Attendance")
+    )
+
+    fig3 = px.line(
+        daily_count,
+        x="date",
+        y="Total_Attendance",
+        markers=True,
+        title="Daily Attendance Trend"
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+
+    # 4️⃣ Low Attendance Warning
+    st.subheader("⚠️ Students Below 75% Attendance")
+    low_attendance = merged_filtered[merged_filtered["Attendance_%"] < 75]
+
+    if not low_attendance.empty:
+        st.dataframe(low_attendance)
+    else:
+        st.success("All students above 75% attendance 🎉")
+
+# Download Option
+if not df.empty:
+    st.download_button(
+        "Download Attendance CSV",
+        df.to_csv(index=False).encode("utf-8"),
+        "attendance.csv",
+        "text/csv"
+    )
 
 # ============================================================
 # STUDENT SECTION
