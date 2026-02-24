@@ -229,7 +229,7 @@ if token:
         expiry = datetime.strptime(row.iloc[0]["expiry"], "%Y-%m-%d %H:%M:%S")
 
         if now_ist() <= expiry:
-
+        
             roll = st.text_input("Roll Number")
 
             if roll:
