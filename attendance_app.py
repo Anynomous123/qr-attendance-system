@@ -43,10 +43,8 @@ students_sheet = sheet.worksheet("students")
 def load_sheet_safe(worksheet, required_columns):
     data = worksheet.get_all_records()
     if data:
-        df = pd.DataFrame(data)
-    else:
-        df = pd.DataFrame(columns=required_columns)
-    return df
+        return pd.DataFrame(data)
+    return pd.DataFrame(columns=required_columns)
 
 
 # ============================================================
@@ -54,19 +52,20 @@ def load_sheet_safe(worksheet, required_columns):
 # ============================================================
 
 def send_email(to_email, subject, body):
-    sender = st.secrets["EMAIL_ADDRESS"]
-    password = st.secrets["EMAIL_PASSWORD"]
-
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = to_email
-
     try:
+        sender = st.secrets["EMAIL_ADDRESS"]
+        password = st.secrets["EMAIL_PASSWORD"]
+
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = sender
+        msg["To"] = to_email
+
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender, password)
             server.send_message(msg)
-    except:
+
+    except Exception:
         st.warning("Email could not be sent.")
 
 
@@ -157,123 +156,108 @@ if st.session_state["logged_in"]:
         buf.seek(0)
 
         st.image(buf, caption="Scan to Mark Attendance")
-        
-# ============================================================
-# LOAD DATA FOR ANALYTICS
-# ============================================================
 
-df = load_sheet_safe(
-    attendance_sheet,
-    ["roll", "name", "subject", "timestamp", "token"]
-)
+    # ===================== ANALYTICS =====================
 
-sessions_df = load_sheet_safe(
-    session_count_sheet,
-    ["subject", "date"]
-)
-
-st.subheader("📋 Live Attendance Record")
-st.dataframe(df, use_container_width=True)
-
-# ============================================================
-# ATTENDANCE PERCENTAGE CALCULATION
-# ============================================================
-
-if not df.empty and not sessions_df.empty:
-
-    total_sessions = (
-        sessions_df.groupby("subject")
-        .size()
-        .reset_index(name="Total_Classes")
+    df = load_sheet_safe(
+        attendance_sheet,
+        ["roll", "name", "subject", "timestamp", "token"]
     )
 
-    attendance_count = (
-        df.groupby(["roll", "subject"])
-        .size()
-        .reset_index(name="Classes_Attended")
+    sessions_df = load_sheet_safe(
+        session_count_sheet,
+        ["subject", "date"]
     )
 
-    merged = attendance_count.merge(total_sessions, on="subject")
-    merged["Attendance_%"] = (
-        merged["Classes_Attended"] /
-        merged["Total_Classes"] * 100
-    ).round(2)
+    st.subheader("📋 Live Attendance Record")
+    st.dataframe(df, use_container_width=True)
 
-    st.subheader("📊 Attendance Percentage Summary")
-    st.dataframe(merged, use_container_width=True)
+    if not df.empty and not sessions_df.empty:
 
-    # ============================================================
-    # ANALYTICS DASHBOARD
-    # ============================================================
+        total_sessions = (
+            sessions_df.groupby("subject")
+            .size()
+            .reset_index(name="Total_Classes")
+        )
 
-    st.divider()
-    st.header("📈 Attendance Analytics Dashboard")
+        attendance_count = (
+            df.groupby(["roll", "subject"])
+            .size()
+            .reset_index(name="Classes_Attended")
+        )
 
-    selected_subject = st.selectbox(
-        "Filter by Subject",
-        ["All"] + list(total_sessions["subject"].unique())
-    )
+        merged = attendance_count.merge(total_sessions, on="subject")
+        merged["Attendance_%"] = (
+            merged["Classes_Attended"] /
+            merged["Total_Classes"] * 100
+        ).round(2)
 
-    if selected_subject != "All":
-        merged_filtered = merged[merged["subject"] == selected_subject]
-    else:
-        merged_filtered = merged
+        st.subheader("📊 Attendance Percentage Summary")
+        st.dataframe(merged, use_container_width=True)
 
-    # 1️⃣ Total Classes Per Subject
-    fig1 = px.bar(
-        total_sessions,
-        x="subject",
-        y="Total_Classes",
-        title="Total Classes per Subject"
-    )
-    st.plotly_chart(fig1, use_container_width=True)
+        st.divider()
+        st.header("📈 Attendance Analytics Dashboard")
 
-    # 2️⃣ Student Attendance %
-    fig2 = px.bar(
-        merged_filtered,
-        x="roll",
-        y="Attendance_%",
-        color="subject",
-        title="Student Attendance Percentage"
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+        selected_subject = st.selectbox(
+            "Filter by Subject",
+            ["All"] + list(total_sessions["subject"].unique())
+        )
 
-    # 3️⃣ Daily Trend
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    df["date"] = df["timestamp"].dt.date
+        if selected_subject != "All":
+            merged_filtered = merged[merged["subject"] == selected_subject]
+        else:
+            merged_filtered = merged
 
-    daily_count = (
-        df.groupby("date")
-        .size()
-        .reset_index(name="Total_Attendance")
-    )
+        fig1 = px.bar(
+            total_sessions,
+            x="subject",
+            y="Total_Classes",
+            title="Total Classes per Subject"
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
-    fig3 = px.line(
-        daily_count,
-        x="date",
-        y="Total_Attendance",
-        markers=True,
-        title="Daily Attendance Trend"
-    )
-    st.plotly_chart(fig3, use_container_width=True)
+        fig2 = px.bar(
+            merged_filtered,
+            x="roll",
+            y="Attendance_%",
+            color="subject",
+            title="Student Attendance Percentage"
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
-    # 4️⃣ Low Attendance Warning
-    st.subheader("⚠️ Students Below 75% Attendance")
-    low_attendance = merged_filtered[merged_filtered["Attendance_%"] < 75]
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["date"] = df["timestamp"].dt.date
 
-    if not low_attendance.empty:
-        st.dataframe(low_attendance)
-    else:
-        st.success("All students above 75% attendance 🎉")
+        daily_count = (
+            df.groupby("date")
+            .size()
+            .reset_index(name="Total_Attendance")
+        )
 
-# Download Option
-if not df.empty:
-    st.download_button(
-        "Download Attendance CSV",
-        df.to_csv(index=False).encode("utf-8"),
-        "attendance.csv",
-        "text/csv"
-    )
+        fig3 = px.line(
+            daily_count,
+            x="date",
+            y="Total_Attendance",
+            markers=True,
+            title="Daily Attendance Trend"
+        )
+        st.plotly_chart(fig3, use_container_width=True)
+
+        st.subheader("⚠️ Students Below 75% Attendance")
+        low_attendance = merged_filtered[merged_filtered["Attendance_%"] < 75]
+
+        if not low_attendance.empty:
+            st.dataframe(low_attendance)
+        else:
+            st.success("All students above 75% attendance 🎉")
+
+    if not df.empty:
+        st.download_button(
+            "Download Attendance CSV",
+            df.to_csv(index=False).encode("utf-8"),
+            "attendance.csv",
+            "text/csv"
+        )
 
 # ============================================================
 # STUDENT SECTION
@@ -282,7 +266,8 @@ if not df.empty:
 st.divider()
 st.header("Student Attendance")
 
-token_from_url = st.query_params.get("token")
+query_params = st.experimental_get_query_params()
+token_from_url = query_params.get("token", [None])[0]
 
 if token_from_url:
 
@@ -308,60 +293,27 @@ if token_from_url:
 
             roll = st.text_input("Roll Number")
 
-            existing_student = students_df[students_df["roll"] == roll]
+            if roll:
 
-            if existing_student.empty:
+                existing_student = students_df[students_df["roll"] == roll]
 
-                st.subheader("First Time Registration")
+                # ================= FIRST TIME =================
+                if existing_student.empty:
 
-                name = st.text_input("Full Name")
-                student_class = st.selectbox("Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"])
-                gmail = st.text_input("Gmail Address")
-                mobile = st.text_input("Mobile Number")
+                    st.subheader("🆕 First Time Registration")
 
-                if st.button("Register & Mark Attendance"):
-
-                    students_sheet.append_row([roll, name, student_class, gmail, mobile])
-
-                    attendance_sheet.append_row([
-                        roll,
-                        name,
-                        subject_db,
-                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        token_from_url
-                    ])
-
-                    send_email(
-                        gmail,
-                        "Attendance Confirmation",
-                        f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
+                    name = st.text_input("Full Name")
+                    student_class = st.selectbox(
+                        "Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"]
                     )
+                    gmail = st.text_input("Gmail Address")
+                    mobile = st.text_input("Mobile Number")
 
-                    st.success("Registered & Attendance Marked!")
+                    if st.button("Register & Mark Attendance"):
 
-            else:
-
-                name = existing_student.iloc[0]["name"]
-                gmail = existing_student.iloc[0]["gmail"]
-
-                if st.button("Mark Attendance"):
-
-                    attendance_df = load_sheet_safe(
-                        attendance_sheet,
-                        ["roll", "name", "subject", "timestamp", "token"]
-                    )
-					if f"marked_{token_from_url}" in st.session_state:
-						st.error("Attendance already submitted from this device.")
-						st.stop()
-                    already_marked = attendance_df[
-                        (attendance_df["roll"] == roll) &
-                        (attendance_df["token"] == token_from_url)
-                    ]
-                    # Device-level lock
-					
-                    if not already_marked.empty:
-                        st.warning("Attendance already marked!")
-                    else:
+                        students_sheet.append_row(
+                            [roll, name, student_class, gmail, mobile]
+                        )
 
                         attendance_sheet.append_row([
                             roll,
@@ -377,8 +329,51 @@ if token_from_url:
                             f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
                         )
 
-                        st.success("Attendance Marked Successfully!")
                         st.session_state[f"marked_{token_from_url}"] = True
+                        st.success("Registration & Attendance Successful!")
+
+                # ================= EXISTING =================
+                else:
+
+                    name = existing_student.iloc[0]["name"]
+                    gmail = existing_student.iloc[0]["gmail"]
+
+                    if st.button("Mark Attendance"):
+
+                        if f"marked_{token_from_url}" in st.session_state:
+                            st.error("Attendance already submitted from this device.")
+                            st.stop()
+
+                        attendance_df = load_sheet_safe(
+                            attendance_sheet,
+                            ["roll", "name", "subject", "timestamp", "token"]
+                        )
+
+                        already_marked = attendance_df[
+                            (attendance_df["roll"] == roll) &
+                            (attendance_df["token"] == token_from_url)
+                        ]
+
+                        if not already_marked.empty:
+                            st.warning("Attendance already marked!")
+                        else:
+
+                            attendance_sheet.append_row([
+                                roll,
+                                name,
+                                subject_db,
+                                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                token_from_url
+                            ])
+
+                            send_email(
+                                gmail,
+                                "Attendance Confirmation",
+                                f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
+                            )
+
+                            st.session_state[f"marked_{token_from_url}"] = True
+                            st.success("Attendance Marked Successfully!")
 
         else:
             st.error("QR Expired!")
