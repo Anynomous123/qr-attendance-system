@@ -124,7 +124,9 @@ if st.session_state["logged_in"]:
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
-        expiry = datetime.utcnow() + timedelta(hours=5, minutes=30, minutes=duration)
+        current_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
+        expiry = current_time + timedelta(minutes=duration)
+        #expiry = datetime.utcnow() + timedelta(hours=5, minutes=30, minutes=duration)
 
         sessions_sheet.append_row([
             token,
