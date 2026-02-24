@@ -200,7 +200,7 @@ if st.session_state["logged_in"]:
         )
 
 # ============================================================
-# STUDENT SECTION (ULTRA STRICT CONTROL)
+# STUDENT SECTION (STRICT + CLEAN INDENTATION)
 # ============================================================
 
 st.divider()
@@ -213,7 +213,7 @@ if token:
 
     sessions_df = load_sheet_safe(
         sessions_sheet,
-        ["token","subject","expiry"]
+        ["token", "subject", "expiry"]
     )
 
     row = sessions_df[sessions_df["token"] == token]
@@ -229,41 +229,20 @@ if token:
 
             if roll:
 
-                # 🔁 Always reload fresh data before checking
-               	reg_key = f"{roll}_{subject_db}"
-
-				students_df = load_sheet_safe(
-					students_sheet,
-					["roll","name","class","gmail","mobile","subject","reg_key"]
-				)
-
-
-				if reg_key in students_df.get("reg_key", []).values:
-					st.error("Already registered for this subject.")
-					st.stop()
-
-
-				students_sheet.append_row([
-					roll,
-					name,
-					student_class,
-					gmail,
-					mobile,
-					subject_db,
-					reg_key
-				])
-				
-
+                students_df = load_sheet_safe(
+                    students_sheet,
+                    ["roll", "name", "class", "gmail", "mobile", "subject", "reg_key"]
+                )
 
                 attendance_df = load_sheet_safe(
                     attendance_sheet,
-                    ["roll","name","subject","timestamp","token"]
+                    ["roll", "name", "subject", "timestamp", "token", "unique_key"]
                 )
 
-                # ========== CHECK REGISTRATION ==========
+                reg_key = f"{roll}_{subject_db}"
+
                 registered = students_df[
-                    (students_df["roll"] == roll) &
-                    (students_df["subject"] == subject_db)
+                    students_df.get("reg_key", "") == reg_key
                 ]
 
                 # =====================================================
@@ -280,51 +259,46 @@ if token:
 
                     if st.button("Register & Mark Attendance"):
 
-                        # 🔒 Double-check again before writing
+                        # Recheck registration
                         students_df = load_sheet_safe(
                             students_sheet,
-                            ["roll","name","class","gmail","mobile","subject"]
+                            ["roll", "name", "class", "gmail", "mobile", "subject", "reg_key"]
                         )
 
-                        recheck = students_df[
-                            (students_df["roll"] == roll) &
-                            (students_df["subject"] == subject_db)
-                        ]
-
-                        if not recheck.empty:
+                        if reg_key in students_df.get("reg_key", []).values:
                             st.error("Already registered for this subject.")
                             st.stop()
 
-                        # Save registration
                         students_sheet.append_row([
-                            roll, name, student_class, gmail, mobile, subject_db
+                            roll,
+                            name,
+                            student_class,
+                            gmail,
+                            mobile,
+                            subject_db,
+                            reg_key
                         ])
 
-                        # Save attendance
+                        # Attendance unique key
                         unique_key = f"{roll}_{token}"
 
+                        attendance_df = load_sheet_safe(
+                            attendance_sheet,
+                            ["roll", "name", "subject", "timestamp", "token", "unique_key"]
+                        )
 
-						attendance_df = load_sheet_safe(
-							attendance_sheet,
-							["roll","name","subject","timestamp","token","unique_key"]
-						)
+                        if unique_key in attendance_df.get("unique_key", []).values:
+                            st.warning("Attendance already marked.")
+                            st.stop()
 
-
-						if unique_key in attendance_df.get("unique_key", []).values:
-							st.warning("Attendance already marked.")
-							st.stop()
-
-
-						attendance_sheet.append_row([
-							roll,
-							name,
-							subject_db,
-							datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-							token,
-							unique_key
-						])
-						
-                        
+                        attendance_sheet.append_row([
+                            roll,
+                            name,
+                            subject_db,
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            token,
+                            unique_key
+                        ])
 
                         send_email(
                             gmail,
@@ -343,55 +317,31 @@ if token:
                     name = registered.iloc[0]["name"]
                     gmail = registered.iloc[0]["gmail"]
 
-                    # 🔒 STRICT TOKEN CHECK
-                    already_marked = attendance_df[
-                        (attendance_df["roll"] == roll) &
-                        (attendance_df["token"] == token)
-                    ]
+                    unique_key = f"{roll}_{token}"
 
-                    if not already_marked.empty:
+                    if unique_key in attendance_df.get("unique_key", []).values:
                         st.warning("Attendance already marked for this session.")
                         st.stop()
 
                     if st.button("Mark Attendance"):
 
-                        # 🔒 Double-check again before writing
                         attendance_df = load_sheet_safe(
                             attendance_sheet,
-                            ["roll","name","subject","timestamp","token"]
+                            ["roll", "name", "subject", "timestamp", "token", "unique_key"]
                         )
 
-                        recheck_att = attendance_df[
-                            (attendance_df["roll"] == roll) &
-                            (attendance_df["token"] == token)
-                        ]
-
-                        if not recheck_att.empty:
+                        if unique_key in attendance_df.get("unique_key", []).values:
                             st.warning("Attendance already marked.")
                             st.stop()
 
-                        unique_key = f"{roll}_{token}"
-
-
-						attendance_df = load_sheet_safe(
-							attendance_sheet,
-							["roll","name","subject","timestamp","token","unique_key"]
-						)
-
-
-						if unique_key in attendance_df.get("unique_key", []).values:
-							st.warning("Attendance already marked for this session.")
-							st.stop()
-
-
-						attendance_sheet.append_row([
-							roll,
-							name,
-							subject_db,
-							datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-							token,
-							unique_key
-						])
+                        attendance_sheet.append_row([
+                            roll,
+                            name,
+                            subject_db,
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            token,
+                            unique_key
+                        ])
 
                         send_email(
                             gmail,
