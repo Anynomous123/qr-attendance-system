@@ -200,7 +200,7 @@ if st.session_state["logged_in"]:
         )
 
 # ============================================================
-# STUDENT SECTION (STRICT CONTROL)
+# STUDENT SECTION (ULTRA STRICT CONTROL)
 # ============================================================
 
 st.divider()
@@ -225,26 +225,30 @@ if token:
 
         if datetime.now() <= expiry:
 
-            students_df = load_sheet_safe(
-                students_sheet,
-                ["roll","name","class","gmail","mobile","subject"]
-            )
-
-            attendance_df = load_sheet_safe(
-                attendance_sheet,
-                ["roll","name","subject","timestamp","token"]
-            )
-
             roll = st.text_input("Roll Number")
 
             if roll:
 
+                # 🔁 Always reload fresh data before checking
+                students_df = load_sheet_safe(
+                    students_sheet,
+                    ["roll","name","class","gmail","mobile","subject"]
+                )
+
+                attendance_df = load_sheet_safe(
+                    attendance_sheet,
+                    ["roll","name","subject","timestamp","token"]
+                )
+
+                # ========== CHECK REGISTRATION ==========
                 registered = students_df[
                     (students_df["roll"] == roll) &
                     (students_df["subject"] == subject_db)
                 ]
 
-                # ===== FIRST TIME REGISTRATION =====
+                # =====================================================
+                # FIRST TIME REGISTRATION
+                # =====================================================
                 if registered.empty:
 
                     st.subheader("New Registration")
@@ -256,10 +260,27 @@ if token:
 
                     if st.button("Register & Mark Attendance"):
 
+                        # 🔒 Double-check again before writing
+                        students_df = load_sheet_safe(
+                            students_sheet,
+                            ["roll","name","class","gmail","mobile","subject"]
+                        )
+
+                        recheck = students_df[
+                            (students_df["roll"] == roll) &
+                            (students_df["subject"] == subject_db)
+                        ]
+
+                        if not recheck.empty:
+                            st.error("Already registered for this subject.")
+                            st.stop()
+
+                        # Save registration
                         students_sheet.append_row([
                             roll, name, student_class, gmail, mobile, subject_db
                         ])
 
+                        # Save attendance
                         attendance_sheet.append_row([
                             roll, name, subject_db,
                             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -273,39 +294,57 @@ if token:
                         )
 
                         st.success("Registered & Attendance Marked Successfully")
+                        st.stop()
 
-                # ===== ALREADY REGISTERED =====
+                # =====================================================
+                # ALREADY REGISTERED
+                # =====================================================
                 else:
 
                     name = registered.iloc[0]["name"]
                     gmail = registered.iloc[0]["gmail"]
 
-                    # Strict: Only one attendance per token
+                    # 🔒 STRICT TOKEN CHECK
                     already_marked = attendance_df[
                         (attendance_df["roll"] == roll) &
                         (attendance_df["token"] == token)
                     ]
 
-                    if already_marked.empty:
-
-                        if st.button("Mark Attendance"):
-
-                            attendance_sheet.append_row([
-                                roll, name, subject_db,
-                                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                token
-                            ])
-
-                            send_email(
-                                gmail,
-                                "Attendance Confirmation",
-                                f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
-                            )
-
-                            st.success("Attendance Marked Successfully")
-
-                    else:
+                    if not already_marked.empty:
                         st.warning("Attendance already marked for this session.")
+                        st.stop()
+
+                    if st.button("Mark Attendance"):
+
+                        # 🔒 Double-check again before writing
+                        attendance_df = load_sheet_safe(
+                            attendance_sheet,
+                            ["roll","name","subject","timestamp","token"]
+                        )
+
+                        recheck_att = attendance_df[
+                            (attendance_df["roll"] == roll) &
+                            (attendance_df["token"] == token)
+                        ]
+
+                        if not recheck_att.empty:
+                            st.warning("Attendance already marked.")
+                            st.stop()
+
+                        attendance_sheet.append_row([
+                            roll, name, subject_db,
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            token
+                        ])
+
+                        send_email(
+                            gmail,
+                            "Attendance Confirmation",
+                            f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
+                        )
+
+                        st.success("Attendance Marked Successfully")
+                        st.stop()
 
         else:
             st.error("QR Expired.")
