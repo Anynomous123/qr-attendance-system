@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 import streamlit as st
 import qrcode
 import pandas as pd
@@ -10,6 +11,7 @@ from email.mime.text import MIMEText
 
 import gspread
 from google.oauth2.service_account import Credentials
+
 
 st.set_page_config(page_title="QR Attendance System", layout="wide")
 
@@ -45,6 +47,9 @@ def load_sheet_safe(worksheet, required_columns):
         return pd.DataFrame(data)
     return pd.DataFrame(columns=required_columns)
 
+
+def now_ist():
+    return datetime.now(ZoneInfo("Asia/Kolkata"))
 # ============================================================
 # EMAIL FUNCTION
 # ============================================================
@@ -122,7 +127,7 @@ if st.session_state["logged_in"]:
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
-        expiry = datetime.now() + timedelta(minutes=duration)
+        expiry = now_ist()+ timedelta(minutes=duration)
 
         sessions_sheet.append_row([
             token,
@@ -132,7 +137,7 @@ if st.session_state["logged_in"]:
 
         session_count_sheet.append_row([
             subject,
-            datetime.now().strftime("%Y-%m-%d")
+            now_ist().strftime("%Y-%m-%d")
         ])
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
@@ -223,7 +228,7 @@ if token:
         subject_db = row.iloc[0]["subject"]
         expiry = datetime.strptime(row.iloc[0]["expiry"], "%Y-%m-%d %H:%M:%S")
 
-        if datetime.now() <= expiry:
+        if now_ist() <= expiry:
 
             roll = st.text_input("Roll Number")
 
@@ -300,7 +305,7 @@ if token:
                             roll,
                             name,
                             subject_db,
-                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            now_ist().strftime("%Y-%m-%d %H:%M:%S"),
                             token,
                             unique_key
                         ])
@@ -343,7 +348,7 @@ if token:
                             roll,
                             name,
                             subject_db,
-                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            now_ist().strftime("%Y-%m-%d %H:%M:%S"),
                             token,
                             unique_key
                         ])
