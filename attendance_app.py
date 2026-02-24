@@ -242,8 +242,10 @@ if token:
                 reg_key = f"{roll}_{subject_db}"
 
                 registered = students_df[
-                    students_df.get("reg_key", "") == reg_key
+                    (students_df["roll"] == roll) &
+                    (students_df["subject"] == subject_db)
                 ]
+                
 
                 # =====================================================
                 # FIRST TIME REGISTRATION
@@ -265,7 +267,10 @@ if token:
                             ["roll", "name", "class", "gmail", "mobile", "subject", "reg_key"]
                         )
 
-                        if reg_key in students_df.get("reg_key", []).values:
+                        if not students_df[
+                            (students_df["roll"] == roll) &
+                            (students_df["subject"] == subject_db)
+                        ].empty:
                             st.error("Already registered for this subject.")
                             st.stop()
 
