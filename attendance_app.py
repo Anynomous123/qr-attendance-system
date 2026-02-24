@@ -260,7 +260,7 @@ if st.session_state["logged_in"]:
         )
 
 # ============================================================
-# STUDENT SECTION
+# STUDENT SECTION (SUBJECT-WISE REGISTRATION FIXED)
 # ============================================================
 
 st.divider()
@@ -288,19 +288,28 @@ if token_from_url:
 
             students_df = load_sheet_safe(
                 students_sheet,
-                ["roll", "name", "class", "gmail", "mobile"]
+                ["roll", "name", "class", "gmail", "mobile", "subject"]
+            )
+
+            attendance_df = load_sheet_safe(
+                attendance_sheet,
+                ["roll", "name", "subject", "timestamp", "token"]
             )
 
             roll = st.text_input("Roll Number")
 
             if roll:
 
-                existing_student = students_df[students_df["roll"] == roll]
+                # 🔎 Check subject-wise registration
+                registered = students_df[
+                    (students_df["roll"] == roll) &
+                    (students_df["subject"] == subject_db)
+                ]
 
-                # ================= FIRST TIME =================
-                if existing_student.empty:
+                # ================= FIRST TIME FOR THIS SUBJECT =================
+                if registered.empty:
 
-                    st.subheader("🆕 First Time Registration")
+                    st.subheader(f"🆕 Register for {subject_db}")
 
                     name = st.text_input("Full Name")
                     student_class = st.selectbox(
@@ -312,7 +321,7 @@ if token_from_url:
                     if st.button("Register & Mark Attendance"):
 
                         students_sheet.append_row(
-                            [roll, name, student_class, gmail, mobile]
+                            [roll, name, student_class, gmail, mobile, subject_db]
                         )
 
                         attendance_sheet.append_row([
@@ -326,37 +335,31 @@ if token_from_url:
                         send_email(
                             gmail,
                             "Attendance Confirmation",
-                            f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
+                            f"Dear {name},\n\nYou are successfully registered for {subject_db} and attendance is marked.\n\nPhysics Department"
                         )
 
-                        st.session_state[f"marked_{token_from_url}"] = True
-                        st.success("Registration & Attendance Successful!")
+                        st.success("Registered & Attendance Marked!")
 
-                # ================= EXISTING =================
+                # ================= ALREADY REGISTERED =================
                 else:
 
-                    name = existing_student.iloc[0]["name"]
-                    gmail = existing_student.iloc[0]["gmail"]
+                    name = registered.iloc[0]["name"]
+                    gmail = registered.iloc[0]["gmail"]
 
-                    if st.button("Mark Attendance"):
+                    st.success(f"Already registered for {subject_db}")
+                    st.write(f"Name: {name}")
 
-                        if f"marked_{token_from_url}" in st.session_state:
-                            st.error("Attendance already submitted from this device.")
-                            st.stop()
+                    # 🚫 Prevent duplicate for same session
+                    already_marked = attendance_df[
+                        (attendance_df["roll"] == roll) &
+                        (attendance_df["token"] == token_from_url)
+                    ]
 
-                        attendance_df = load_sheet_safe(
-                            attendance_sheet,
-                            ["roll", "name", "subject", "timestamp", "token"]
-                        )
+                    if not already_marked.empty:
+                        st.warning("Attendance already marked for this session.")
+                    else:
 
-                        already_marked = attendance_df[
-                            (attendance_df["roll"] == roll) &
-                            (attendance_df["token"] == token_from_url)
-                        ]
-
-                        if not already_marked.empty:
-                            st.warning("Attendance already marked!")
-                        else:
+                        if st.button("Mark Attendance"):
 
                             attendance_sheet.append_row([
                                 roll,
@@ -372,7 +375,6 @@ if token_from_url:
                                 f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
                             )
 
-                            st.session_state[f"marked_{token_from_url}"] = True
                             st.success("Attendance Marked Successfully!")
 
         else:
