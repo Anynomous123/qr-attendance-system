@@ -350,12 +350,15 @@ if token_from_url:
                         attendance_sheet,
                         ["roll", "name", "subject", "timestamp", "token"]
                     )
-
+					if f"marked_{token_from_url}" in st.session_state:
+						st.error("Attendance already submitted from this device.")
+						st.stop()
                     already_marked = attendance_df[
                         (attendance_df["roll"] == roll) &
                         (attendance_df["token"] == token_from_url)
                     ]
-
+                    # Device-level lock
+					
                     if not already_marked.empty:
                         st.warning("Attendance already marked!")
                     else:
@@ -375,6 +378,7 @@ if token_from_url:
                         )
 
                         st.success("Attendance Marked Successfully!")
+                        st.session_state[f"marked_{token_from_url}"] = True
 
         else:
             st.error("QR Expired!")
