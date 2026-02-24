@@ -230,11 +230,10 @@ if token:
             if roll:
 
                 # 🔁 Always reload fresh data before checking
-                reg_key = f"{roll}_{subject_db}"
+               	reg_key = f"{roll}_{subject_db}"
 
-
-		 		students_df = load_sheet_safe(
-		 		students_sheet,
+				students_df = load_sheet_safe(
+					students_sheet,
 					["roll","name","class","gmail","mobile","subject","reg_key"]
 				)
 
