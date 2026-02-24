@@ -1,4 +1,3 @@
-from zoneinfo import ZoneInfo
 import streamlit as st
 import qrcode
 import pandas as pd
@@ -48,8 +47,6 @@ def load_sheet_safe(worksheet, required_columns):
     return pd.DataFrame(columns=required_columns)
 
 
-def now_ist():
-    return datetime.now(ZoneInfo("Asia/Kolkata"))
 # ============================================================
 # EMAIL FUNCTION
 # ============================================================
@@ -127,7 +124,7 @@ if st.session_state["logged_in"]:
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
-        expiry = now_ist()+ timedelta(minutes=duration)
+        expiry = datetime.utcnow() + timedelta(hours=5, minutes=30, minutes=duration)
 
         sessions_sheet.append_row([
             token,
@@ -137,7 +134,7 @@ if st.session_state["logged_in"]:
 
         session_count_sheet.append_row([
             subject,
-            now_ist().strftime("%Y-%m-%d")
+            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
         ])
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
@@ -228,7 +225,7 @@ if token:
         subject_db = row.iloc[0]["subject"]
         expiry = datetime.strptime(row.iloc[0]["expiry"], "%Y-%m-%d %H:%M:%S")
 
-        if now_ist() <= expiry:
+        if datetime.utcnow() + timedelta(hours=5, minutes=30) <= expiry:
         
             roll = st.text_input("Roll Number")
 
@@ -305,7 +302,7 @@ if token:
                             roll,
                             name,
                             subject_db,
-                            now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
                             token,
                             unique_key
                         ])
@@ -348,7 +345,7 @@ if token:
                             roll,
                             name,
                             subject_db,
-                            now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
                             token,
                             unique_key
                         ])
