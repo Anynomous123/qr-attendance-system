@@ -103,7 +103,8 @@ if st.session_state["logged_in"]:
         "Mathematical Physics",
         "Nuclear Physics",
         "Solid State Physics",
-        "QFT"
+        "QFT",
+        "ABC"
     ]
 
     subject = st.sidebar.selectbox("Select Subject", subjects)
