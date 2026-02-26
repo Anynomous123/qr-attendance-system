@@ -183,8 +183,8 @@ if st.session_state["logged_in"]:
                 cursor.execute("DELETE FROM sessions")
                 conn.commit()
                 st.sidebar.success("Attendance Data Reset Successfully")
-                else:
-                    st.sidebar.error("Incorrect Admin Password")
+            else:
+                st.sidebar.error("Incorrect Admin Password")
 
     # ================= ANALYTICS =================
 
