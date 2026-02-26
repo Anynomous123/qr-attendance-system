@@ -277,7 +277,7 @@ if token:
 
         if now_ist() <= expiry:
             # Live counter
-	    cursor.execute("SELECT COUNT(*) FROM attendance WHERE token=?",
+            cursor.execute("SELECT COUNT(*) FROM attendance WHERE token=?",
 	        (token,)
 	    )
 	    count = cursor.fetchone()[0]
