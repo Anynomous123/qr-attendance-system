@@ -281,11 +281,10 @@ if token:
 	        (token,)
 	    )
 	    count = cursor.fetchone()[0]
-	        st.info(f"👥 Students Marked: {count}")
-			
-		if count >= 100:
-		    st.error("Attendance Closed: 100 Students Reached")
-		    st.stop()
+	    st.info(f"👥 Students Marked: {count}")
+	        if count >= 100:
+	            st.error("Attendance Closed: 100 Students Reached")
+	            st.stop()
 
             roll = st.text_input("Roll Number")
 
