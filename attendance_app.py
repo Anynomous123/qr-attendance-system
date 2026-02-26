@@ -26,8 +26,18 @@ def now_ist():
 # SQLITE DATABASE (HIGH SPEED – NO CRASH)
 # ============================================================
 
-conn = sqlite3.connect("attendance.db", check_same_thread=False, timeout=10)
+#conn = sqlite3.connect("attendance.db", check_same_thread=False, timeout=10)
+conn = sqlite3.connect(
+	"attendance.db",
+	check_same_thread=False,
+	timeout=30,
+	isolation_level=None
+)
+
+
 cursor = conn.cursor()
+cursor.execute("PRAGMA journal_mode=WAL;")
+#cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS students (
@@ -274,17 +284,36 @@ if token:
 
         subject_db = session[1]
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
-
         if now_ist() <= expiry:
-            cursor.execute(
-                "SELECT COUNT(*) FROM attendance WHERE token=?",
-                (token,)
-            )
-	    count = cursor.fetchone()[0]
-	    st.info(f"👥 Students Marked: {count}")
-	    if count >= 100:
-	        st.error("Attendance Closed: 100 Students Reached")
-	        st.stop()
+
+
+			# Live student counter
+			cursor.execute(
+				"SELECT COUNT(*) FROM attendance WHERE token=?",
+				(token,)
+			)
+			count = cursor.fetchone()[0]
+
+
+			st.info(f"👥 Students Marked: {count}")
+
+
+			# Auto close after 100 students
+			if count >= 100:
+				st.error("Attendance Closed: 100 Students Reached")
+				st.stop()
+        #if now_ist() <= expiry:
+         #   cursor.execute(
+          #      "SELECT COUNT(*) FROM attendance WHERE token=?",
+           #     (token,)
+            #)
+	    #count = cursor.fetchone()[0]
+	    
+	    #st.info(f"👥 Students Marked: {count}")
+	    
+	    #if count >= 100:
+	     #   st.error("Attendance Closed: 100 Students Reached")
+	      #  st.stop()
 	            
             roll = st.text_input("Roll Number")
 
