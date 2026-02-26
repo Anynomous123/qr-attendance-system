@@ -175,28 +175,16 @@ if st.session_state["logged_in"]:
         st.image(buf)
         
         st.sidebar.markdown("---")
-		st.sidebar.subheader("⚠ Admin Controls")
-
-
-		admin_password = st.sidebar.text_input("Admin Reset Password", type="password")
-
-
-		if st.sidebar.button("Reset Attendance Data"):
-
-
-			if admin_password == st.secrets["ADMIN_RESET_KEY"]:
-
-
-				cursor.execute("DELETE FROM attendance")
-				cursor.execute("DELETE FROM sessions")
-				conn.commit()
-
-
-				st.sidebar.success("Attendance Data Reset Successfully")
-
-
-			else:
-				st.sidebar.error("Incorrect Admin Password")
+        st.sidebar.subheader("⚠ Admin Controls")
+        admin_password = st.sidebar.text_input("Admin Reset Password", type="password")
+        if st.sidebar.button("Reset Attendance Data"):
+            if admin_password == st.secrets["ADMIN_RESET_KEY"]:
+                cursor.execute("DELETE FROM attendance")
+                cursor.execute("DELETE FROM sessions")
+                conn.commit()
+                st.sidebar.success("Attendance Data Reset Successfully")
+                else:
+                    st.sidebar.error("Incorrect Admin Password")
 
     # ================= ANALYTICS =================
 
