@@ -276,11 +276,10 @@ if token:
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
 
         if now_ist() <= expiry:
-            # Live counter
             cursor.execute(
                 "SELECT COUNT(*) FROM attendance WHERE token=?",
-	        (token,)
-	    )
+                (token,)
+            )
 	    count = cursor.fetchone()[0]
 	    st.info(f"👥 Students Marked: {count}")
 	    if count >= 100:
