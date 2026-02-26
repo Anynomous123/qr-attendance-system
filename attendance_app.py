@@ -197,8 +197,8 @@ if st.session_state["logged_in"]:
     st.subheader("📋 Live Attendance Record")
     st.dataframe(attendance_df, use_container_width=True)
     if st.button("Show All Subjects Data"):
-	all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-	st.dataframe(all_data, use_container_width=True)
+        all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+        st.dataframe(all_data, use_container_width=True)
 
     if not attendance_df.empty:
 
@@ -241,10 +241,10 @@ if st.session_state["logged_in"]:
 	# Export Current Subject
 	csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
 	st.download_button(
-		"Download Current Subject CSV",
-		csv_subject,
-		f"{subject}_attendance.csv",
-		"text/csv"
+	    "Download Current Subject CSV",
+	    csv_subject,
+	    f"{subject}_attendance.csv",
+	    "text/csv"
 	)
 
 
@@ -252,10 +252,10 @@ if st.session_state["logged_in"]:
 	all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
 	csv_all = all_data.to_csv(index=False).encode("utf-8")
 	st.download_button(
-		"Download All Subjects CSV",
-		csv_all,
-		"all_attendance.csv",
-		"text/csv"
+	    "Download All Subjects CSV",
+	    csv_all,
+	    "all_attendance.csv",
+	    "text/csv"
 	)
 # ============================================================
 # STUDENT SECTION
@@ -278,19 +278,16 @@ if token:
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
 
         if now_ist() <= expiry:
-        	# Live counter
-		cursor.execute(
-			"SELECT COUNT(*) FROM attendance WHERE token=?",
-			(token,)
-		)
-		count = cursor.fetchone()[0]
-
-
-		st.info(f"👥 Students Marked: {count}")
+            # Live counter
+	    cursor.execute("SELECT COUNT(*) FROM attendance WHERE token=?",
+	        (token,)
+	    )
+	    count = cursor.fetchone()[0]
+	        st.info(f"👥 Students Marked: {count}")
 			
 		if count >= 100:
-			st.error("Attendance Closed: 100 Students Reached")
-			st.stop()
+		    st.error("Attendance Closed: 100 Students Reached")
+		    st.stop()
 
             roll = st.text_input("Roll Number")
 
