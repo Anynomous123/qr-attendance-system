@@ -285,21 +285,21 @@ if token:
         subject_db = session[1]
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
         if now_ist() <= expiry:
-        # Live student counter
-            cursor.execute(
-				"SELECT COUNT(*) FROM attendance WHERE token=?",
-				(token,)
-			)
-			count = cursor.fetchone()[0]
+        	# Live student counter
+        	cursor.execute(
+        	    "SELECT COUNT(*) FROM attendance WHERE token=?",
+        	    (token,)
+		)
+		count = cursor.fetchone()[0]
 
 
-			st.info(f"👥 Students Marked: {count}")
+		st.info(f"👥 Students Marked: {count}")
 
 
-			# Auto close after 100 students
-			if count >= 100:
-				st.error("Attendance Closed: 100 Students Reached")
-				st.stop()
+		# Auto close after 100 students
+		if count >= 100:
+		    st.error("Attendance Closed: 100 Students Reached")
+		    st.stop()
         #if now_ist() <= expiry:
          #   cursor.execute(
           #      "SELECT COUNT(*) FROM attendance WHERE token=?",
