@@ -277,15 +277,17 @@ if token:
 
         if now_ist() <= expiry:
             # Live counter
-            cursor.execute("SELECT COUNT(*) FROM attendance WHERE token=?",
+            cursor.execute(
+                "SELECT COUNT(*) FROM attendance WHERE token=?",
 	        (token,)
 	    )
 	    count = cursor.fetchone()[0]
+	    
 	    st.info(f"👥 Students Marked: {count}")
-	        if count >= 100:
-	            st.error("Attendance Closed: 100 Students Reached")
-	            st.stop()
-
+	    if count >= 100:
+	        st.error("Attendance Closed: 100 Students Reached")
+	        st.stop()
+	            
             roll = st.text_input("Roll Number")
 
             if roll:
