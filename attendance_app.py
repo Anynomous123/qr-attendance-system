@@ -197,8 +197,8 @@ if st.session_state["logged_in"]:
     st.subheader("📋 Live Attendance Record")
     st.dataframe(attendance_df, use_container_width=True)
     if st.button("Show All Subjects Data"):
-		all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-		st.dataframe(all_data, use_container_width=True)
+	all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+	st.dataframe(all_data, use_container_width=True)
 
     if not attendance_df.empty:
 
