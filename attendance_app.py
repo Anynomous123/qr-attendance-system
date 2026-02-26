@@ -125,8 +125,25 @@ if st.session_state["logged_in"]:
 
     subjects = [
         "Mechanics (PHYS101TH)",
+        "Electricity, Magnetism & EMT (PHYS102TH)",
+        "Statistical & Thermal Physics (PHYS201TH)",
+        "Waves and Optics (PHYS202TH)",
+        "Computational Physics (PHYS204TH)",
+        "Electronic Circuits & Metwork Skills (PHYS205TH)",
         "Modern Physics (PHYS301TH)",
-        "Nuclear and Particle Physics (PHYS304TH)"
+        "Nuclear and Particle Physics (PHYS304TH)",
+        "Radiation Safety (PHYS307TH)",
+        "Renewable Energy and Energy Harvesting (PHYS310TH)",
+        "Mechanics (PHYS101PR)",
+        "Electricity, Magnetism & EMT (PHYS102PR)",
+        "Statistical & Thermal Physics (PHYS201PR)",
+        "Waves and Optics (PHYS202PR)", 
+        "Computational Physics (PHYS204SE)", 
+        "Electronic Circuits & Metwork Skills (PHYS205SE)",   
+        "Modern Physics (PHYS301PR)", 
+        "Nuclear and Particle Physics (PHYS304TU)",  
+        "Radiation Safety (PHYS307SE)",
+        "Renewable Energy and Energy Harvesting (PHYS310TH)"
     ]
 
     subject = st.sidebar.selectbox("Select Subject", subjects)
@@ -176,6 +193,23 @@ if st.session_state["logged_in"]:
 
         fig = px.bar(merged, x="roll", y="Attendance_%", color="subject")
         st.plotly_chart(fig, use_container_width=True)
+        
+        fig1 = px.bar(total_sessions, x="subject", y="Total_Classes")
+        st.plotly_chart(fig1, use_container_width=True)
+        
+        fig2 = px.bar(merged, x="roll", y="Attendance_%", color="subject")
+        st.plotly_chart(fig2, use_container_width=True)
+
+        attendance_df["timestamp"] = pd.to_datetime(attendance_df["timestamp"])
+        attendance_df["date"] = attendance_df["timestamp"].dt.date
+        daily = attendance_df.groupby("date").size().reset_index(name="Total")
+
+        fig3 = px.line(daily, x="date", y="Total", markers=True)
+        st.plotly_chart(fig3, use_container_width=True)
+
+        low = merged[merged["Attendance_%"] < 75]
+        st.subheader("⚠ Below 75% Attendance")
+        st.dataframe(low)
 
         # CSV DOWNLOAD
         csv_data = attendance_df.to_csv(index=False).encode("utf-8")
