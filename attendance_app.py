@@ -189,11 +189,11 @@ if st.session_state["logged_in"]:
     # ================= ANALYTICS =================
 
     #attendance_df = pd.read_sql_query("SELECT * FROM attendance", conn)
-	attendance_df = pd.read_sql_query(
-		"SELECT * FROM attendance WHERE subject=?",
-		conn,
-		params=(subject,)
-	)
+    attendance_df = pd.read_sql_query(
+        "SELECT * FROM attendance WHERE subject=?",
+	conn,
+	params=(subject,)
+    )
     st.subheader("📋 Live Attendance Record")
     st.dataframe(attendance_df, use_container_width=True)
     if st.button("Show All Subjects Data"):
@@ -238,25 +238,25 @@ if st.session_state["logged_in"]:
         # CSV DOWNLOAD
         #csv_data = attendance_df.to_csv(index=False).encode("utf-8")
         #st.download_button("Download attendance.csv", csv_data, "attendance.csv", "text/csv")
-		# Export Current Subject
-		csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
-		st.download_button(
-			"Download Current Subject CSV",
-			csv_subject,
-			f"{subject}_attendance.csv",
-			"text/csv"
-		)
+	# Export Current Subject
+	csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
+	st.download_button(
+		"Download Current Subject CSV",
+		csv_subject,
+		f"{subject}_attendance.csv",
+		"text/csv"
+	)
 
 
-		# Export All Subjects
-		all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-		csv_all = all_data.to_csv(index=False).encode("utf-8")
-		st.download_button(
-			"Download All Subjects CSV",
-			csv_all,
-			"all_attendance.csv",
-			"text/csv"
-		)
+	# Export All Subjects
+	all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+	csv_all = all_data.to_csv(index=False).encode("utf-8")
+	st.download_button(
+		"Download All Subjects CSV",
+		csv_all,
+		"all_attendance.csv",
+		"text/csv"
+	)
 # ============================================================
 # STUDENT SECTION
 # ============================================================
@@ -279,18 +279,18 @@ if token:
 
         if now_ist() <= expiry:
         	# Live counter
-			cursor.execute(
-				"SELECT COUNT(*) FROM attendance WHERE token=?",
-				(token,)
-			)
-			count = cursor.fetchone()[0]
+		cursor.execute(
+			"SELECT COUNT(*) FROM attendance WHERE token=?",
+			(token,)
+		)
+		count = cursor.fetchone()[0]
 
 
-			st.info(f"👥 Students Marked: {count}")
+		st.info(f"👥 Students Marked: {count}")
 			
-			if count >= 100:
-				st.error("Attendance Closed: 100 Students Reached")
-				st.stop()
+		if count >= 100:
+			st.error("Attendance Closed: 100 Students Reached")
+			st.stop()
 
             roll = st.text_input("Roll Number")
 
