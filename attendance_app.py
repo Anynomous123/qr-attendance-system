@@ -26,7 +26,7 @@ def now_ist():
 # SQLITE DATABASE (HIGH SPEED – NO CRASH)
 # ============================================================
 
-conn = sqlite3.connect("attendance.db", check_same_thread=False)
+conn = sqlite3.connect("attendance.db", check_same_thread=False, timeout=10)
 cursor = conn.cursor()
 
 cursor.execute("""
@@ -146,6 +146,11 @@ if st.session_state["logged_in"]:
         "Renewable Energy and Energy Harvesting (PHYS310TH)"
     ]
 
+    selected_class = st.sidebar.selectbox(
+		"Select Class",
+		["B.Sc 1", "B.Sc 2", "B.Sc 3"]
+	)
+	
     subject = st.sidebar.selectbox("Select Subject", subjects)
     duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
 
@@ -168,13 +173,44 @@ if st.session_state["logged_in"]:
         qr.save(buf)
         buf.seek(0)
         st.image(buf)
+        
+        st.sidebar.markdown("---")
+		st.sidebar.subheader("⚠ Admin Controls")
+
+
+		admin_password = st.sidebar.text_input("Admin Reset Password", type="password")
+
+
+		if st.sidebar.button("Reset Attendance Data"):
+
+
+			if admin_password == st.secrets["ADMIN_RESET_KEY"]:
+
+
+				cursor.execute("DELETE FROM attendance")
+				cursor.execute("DELETE FROM sessions")
+				conn.commit()
+
+
+				st.sidebar.success("Attendance Data Reset Successfully")
+
+
+			else:
+				st.sidebar.error("Incorrect Admin Password")
 
     # ================= ANALYTICS =================
 
-    attendance_df = pd.read_sql_query("SELECT * FROM attendance", conn)
-
+    #attendance_df = pd.read_sql_query("SELECT * FROM attendance", conn)
+	attendance_df = pd.read_sql_query(
+		"SELECT * FROM attendance WHERE subject=?",
+		conn,
+		params=(subject,)
+	)
     st.subheader("📋 Live Attendance Record")
     st.dataframe(attendance_df, use_container_width=True)
+    if st.button("Show All Subjects Data"):
+		all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+		st.dataframe(all_data, use_container_width=True)
 
     if not attendance_df.empty:
 
@@ -191,8 +227,8 @@ if st.session_state["logged_in"]:
         st.subheader("📊 Attendance % Summary")
         st.dataframe(merged, use_container_width=True)
 
-        fig = px.bar(merged, x="roll", y="Attendance_%", color="subject")
-        st.plotly_chart(fig, use_container_width=True)
+        #fig = px.bar(merged, x="roll", y="Attendance_%", color="subject")
+        #st.plotly_chart(fig, use_container_width=True)
         
         fig1 = px.bar(total_sessions, x="subject", y="Total_Classes")
         st.plotly_chart(fig1, use_container_width=True)
@@ -212,9 +248,27 @@ if st.session_state["logged_in"]:
         st.dataframe(low)
 
         # CSV DOWNLOAD
-        csv_data = attendance_df.to_csv(index=False).encode("utf-8")
-        st.download_button("Download attendance.csv", csv_data, "attendance.csv", "text/csv")
+        #csv_data = attendance_df.to_csv(index=False).encode("utf-8")
+        #st.download_button("Download attendance.csv", csv_data, "attendance.csv", "text/csv")
+		# Export Current Subject
+		csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
+		st.download_button(
+			"Download Current Subject CSV",
+			csv_subject,
+			f"{subject}_attendance.csv",
+			"text/csv"
+		)
 
+
+		# Export All Subjects
+		all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+		csv_all = all_data.to_csv(index=False).encode("utf-8")
+		st.download_button(
+			"Download All Subjects CSV",
+			csv_all,
+			"all_attendance.csv",
+			"text/csv"
+		)
 # ============================================================
 # STUDENT SECTION
 # ============================================================
@@ -236,6 +290,19 @@ if token:
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
 
         if now_ist() <= expiry:
+        	# Live counter
+			cursor.execute(
+				"SELECT COUNT(*) FROM attendance WHERE token=?",
+				(token,)
+			)
+			count = cursor.fetchone()[0]
+
+
+			st.info(f"👥 Students Marked: {count}")
+			
+			if count >= 100:
+				st.error("Attendance Closed: 100 Students Reached")
+				st.stop()
 
             roll = st.text_input("Roll Number")
 
