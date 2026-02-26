@@ -7,45 +7,60 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
+import sqlite3
 
-import gspread
-from google.oauth2.service_account import Credentials
-
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(page_title="QR Attendance System", layout="wide")
 
 # ============================================================
-# GOOGLE SHEETS SETUP
+# IST TIME FUNCTION
 # ============================================================
 
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+def now_ist():
+    return datetime.utcnow() + timedelta(hours=5, minutes=30)
 
-creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scope
+# ============================================================
+# SQLITE DATABASE (HIGH SPEED – NO CRASH)
+# ============================================================
+
+conn = sqlite3.connect("attendance.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS students (
+    roll TEXT,
+    name TEXT,
+    class TEXT,
+    gmail TEXT,
+    mobile TEXT,
+    subject TEXT,
+    PRIMARY KEY (roll, subject)
 )
+""")
 
-client = gspread.authorize(creds)
-sheet = client.open("Physics_Attendance_DB")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    subject TEXT,
+    expiry TEXT
+)
+""")
 
-attendance_sheet = sheet.worksheet("attendance")
-sessions_sheet = sheet.worksheet("sessions")
-session_count_sheet = sheet.worksheet("session_count")
-students_sheet = sheet.worksheet("students")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS attendance (
+    roll TEXT,
+    name TEXT,
+    subject TEXT,
+    timestamp TEXT,
+    token TEXT,
+    PRIMARY KEY (roll, token)
+)
+""")
 
-# ============================================================
-# SAFE LOADER
-# ============================================================
-
-def load_sheet_safe(worksheet, required_columns):
-    data = worksheet.get_all_records()
-    if data:
-        return pd.DataFrame(data)
-    return pd.DataFrame(columns=required_columns)
-
+conn.commit()
 
 # ============================================================
 # EMAIL FUNCTION
@@ -95,13 +110,13 @@ else:
         st.session_state["logged_in"] = False
 
 # ============================================================
-# MAIN TITLE
+# TITLE
 # ============================================================
 
 st.title("📚 QR Based Attendance System – Physics Department")
 
 # ============================================================
-# TEACHER DASHBOARD + ANALYTICS
+# TEACHER DASHBOARD
 # ============================================================
 
 if st.session_state["logged_in"]:
@@ -110,25 +125,8 @@ if st.session_state["logged_in"]:
 
     subjects = [
         "Mechanics (PHYS101TH)",
-        "Electricity, Magnetism & EMT (PHYS102TH)",
-        "Statistical & Thermal Physics (PHYS201TH)",
-        "Waves and Optics (PHYS202TH)",
-        "Computational Physics (PHYS204TH)",
-        "Electronic Circuits & Metwork Skills (PHYS205TH)",
         "Modern Physics (PHYS301TH)",
-        "Nuclear and Particle Physics (PHYS304TH)",
-        "Radiation Safety (PHYS307TH)",
-        "Renewable Energy and Energy Harvesting (PHYS310TH)",
-        "Mechanics (PHYS101PR)",
-        "Electricity, Magnetism & EMT (PHYS102PR)",
-        "Statistical & Thermal Physics (PHYS201PR)",
-        "Waves and Optics (PHYS202PR)", 
-        "Computational Physics (PHYS204SE)", 
-        "Electronic Circuits & Metwork Skills (PHYS205SE)",   
-        "Modern Physics (PHYS301PR)", 
-        "Nuclear and Particle Physics (PHYS304TU)",  
-        "Radiation Safety (PHYS307SE)",
-        "Renewable Energy and Energy Harvesting (PHYS310TH)"
+        "Nuclear and Particle Physics (PHYS304TH)"
     ]
 
     subject = st.sidebar.selectbox("Select Subject", subjects)
@@ -137,20 +135,13 @@ if st.session_state["logged_in"]:
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
-        current_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
-        expiry = current_time + timedelta(minutes=duration)
-        #expiry = datetime.utcnow() + timedelta(hours=5, minutes=30, minutes=duration)
+        expiry = now_ist() + timedelta(minutes=duration)
 
-        sessions_sheet.append_row([
-            token,
-            subject,
-            expiry.strftime("%Y-%m-%d %H:%M:%S")
-        ])
-
-        session_count_sheet.append_row([
-            subject,
-            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
-        ])
+        cursor.execute(
+            "INSERT INTO sessions VALUES (?, ?, ?)",
+            (token, subject, expiry.strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        conn.commit()
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
         qr_data = f"{app_url}/?token={token}"
@@ -163,61 +154,35 @@ if st.session_state["logged_in"]:
 
     # ================= ANALYTICS =================
 
-    attendance_df = load_sheet_safe(
-        attendance_sheet,
-        ["roll", "name", "subject", "timestamp", "token"]
-    )
-
-    session_df = load_sheet_safe(
-        session_count_sheet,
-        ["subject", "date"]
-    )
+    attendance_df = pd.read_sql_query("SELECT * FROM attendance", conn)
 
     st.subheader("📋 Live Attendance Record")
     st.dataframe(attendance_df, use_container_width=True)
 
-    if not attendance_df.empty and not session_df.empty:
+    if not attendance_df.empty:
 
-        total_sessions = session_df.groupby("subject").size().reset_index(name="Total_Classes")
+        total_sessions = pd.read_sql_query(
+            "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
+            conn
+        )
+
         attendance_count = attendance_df.groupby(["roll","subject"]).size().reset_index(name="Classes_Attended")
 
         merged = attendance_count.merge(total_sessions, on="subject")
         merged["Attendance_%"] = (merged["Classes_Attended"] / merged["Total_Classes"] * 100).round(2)
 
-        st.subheader("📊 Attendance Percentage Summary")
+        st.subheader("📊 Attendance % Summary")
         st.dataframe(merged, use_container_width=True)
 
-        st.header("📈 Analytics Dashboard")
+        fig = px.bar(merged, x="roll", y="Attendance_%", color="subject")
+        st.plotly_chart(fig, use_container_width=True)
 
-        fig1 = px.bar(total_sessions, x="subject", y="Total_Classes")
-        st.plotly_chart(fig1, use_container_width=True)
-
-        fig2 = px.bar(merged, x="roll", y="Attendance_%", color="subject")
-        st.plotly_chart(fig2, use_container_width=True)
-
-        attendance_df["timestamp"] = pd.to_datetime(attendance_df["timestamp"])
-        attendance_df["date"] = attendance_df["timestamp"].dt.date
-        daily = attendance_df.groupby("date").size().reset_index(name="Total")
-
-        fig3 = px.line(daily, x="date", y="Total", markers=True)
-        st.plotly_chart(fig3, use_container_width=True)
-
-        low = merged[merged["Attendance_%"] < 75]
-        st.subheader("⚠ Below 75% Attendance")
-        st.dataframe(low)
-
-        # ================= CSV DOWNLOAD =================
-        st.subheader("⬇ Download Attendance Data")
+        # CSV DOWNLOAD
         csv_data = attendance_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Download attendance.csv",
-            data=csv_data,
-            file_name="attendance.csv",
-            mime="text/csv"
-        )
+        st.download_button("Download attendance.csv", csv_data, "attendance.csv", "text/csv")
 
 # ============================================================
-# STUDENT SECTION (STRICT + CLEAN INDENTATION)
+# STUDENT SECTION
 # ============================================================
 
 st.divider()
@@ -228,46 +193,28 @@ token = query.get("token", [None])[0]
 
 if token:
 
-    sessions_df = load_sheet_safe(
-        sessions_sheet,
-        ["token", "subject", "expiry"]
-    )
+    cursor.execute("SELECT * FROM sessions WHERE token=?", (token,))
+    session = cursor.fetchone()
 
-    row = sessions_df[sessions_df["token"] == token]
+    if session:
 
-    if not row.empty:
+        subject_db = session[1]
+        expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
 
-        subject_db = row.iloc[0]["subject"]
-        expiry = datetime.strptime(row.iloc[0]["expiry"], "%Y-%m-%d %H:%M:%S")
+        if now_ist() <= expiry:
 
-        if datetime.utcnow() + timedelta(hours=5, minutes=30) <= expiry:
-        
             roll = st.text_input("Roll Number")
 
             if roll:
 
-                students_df = load_sheet_safe(
-                    students_sheet,
-                    ["roll", "name", "class", "gmail", "mobile", "subject", "reg_key"]
+                cursor.execute(
+                    "SELECT * FROM students WHERE roll=? AND subject=?",
+                    (roll, subject_db)
                 )
+                registered = cursor.fetchone()
 
-                attendance_df = load_sheet_safe(
-                    attendance_sheet,
-                    ["roll", "name", "subject", "timestamp", "token", "unique_key"]
-                )
-
-                reg_key = f"{roll}_{subject_db}"
-
-                registered = students_df[
-                    (students_df["roll"] == roll) &
-                    (students_df["subject"] == subject_db)
-                ]
-                
-
-                # =====================================================
-                # FIRST TIME REGISTRATION
-                # =====================================================
-                if registered.empty:
+                # ================= FIRST TIME =================
+                if not registered:
 
                     st.subheader("New Registration")
 
@@ -278,101 +225,71 @@ if token:
 
                     if st.button("Register & Mark Attendance"):
 
-                        # Recheck registration
-                        students_df = load_sheet_safe(
-                            students_sheet,
-                            ["roll", "name", "class", "gmail", "mobile", "subject", "reg_key"]
-                        )
+                        try:
+                            cursor.execute(
+                                "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
+                                (roll, name, student_class, gmail, mobile, subject_db)
+                            )
 
-                        if not students_df[
-                            (students_df["roll"] == roll) &
-                            (students_df["subject"] == subject_db)
-                        ].empty:
-                            st.error("Already registered for this subject.")
-                            st.stop()
+                            cursor.execute(
+                                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                                (
+                                    roll,
+                                    name,
+                                    subject_db,
+                                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                                    token
+                                )
+                            )
 
-                        students_sheet.append_row([
-                            roll,
-                            name,
-                            student_class,
-                            gmail,
-                            mobile,
-                            subject_db,
-                            reg_key
-                        ])
+                            conn.commit()
 
-                        # Attendance unique key
-                        unique_key = f"{roll}_{token}"
+                            send_email(gmail, "Attendance Confirmed",
+                                       f"Dear {name}, your attendance is marked.")
 
-                        attendance_df = load_sheet_safe(
-                            attendance_sheet,
-                            ["roll", "name", "subject", "timestamp", "token", "unique_key"]
-                        )
+                            st.success("Registered & Attendance Marked")
 
-                        if unique_key in attendance_df.get("unique_key", []).values:
-                            st.warning("Attendance already marked.")
-                            st.stop()
+                        except sqlite3.IntegrityError:
+                            st.warning("Already registered or attendance marked.")
 
-                        attendance_sheet.append_row([
-                            roll,
-                            name,
-                            subject_db,
-                            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
-                            token,
-                            unique_key
-                        ])
-
-                        send_email(
-                            gmail,
-                            "Attendance Confirmation",
-                            f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
-                        )
-
-                        st.success("Registered & Attendance Marked Successfully")
-                        st.stop()
-
-                # =====================================================
-                # ALREADY REGISTERED
-                # =====================================================
+                # ================= ALREADY REGISTERED =================
                 else:
 
-                    name = registered.iloc[0]["name"]
-                    gmail = registered.iloc[0]["gmail"]
+                    name = registered[1]
+                    gmail = registered[3]
 
-                    unique_key = f"{roll}_{token}"
+                    cursor.execute(
+                        "SELECT * FROM attendance WHERE roll=? AND token=?",
+                        (roll, token)
+                    )
 
-                    if unique_key in attendance_df.get("unique_key", []).values:
-                        st.warning("Attendance already marked for this session.")
-                        st.stop()
+                    if cursor.fetchone():
+                        st.warning("Attendance already marked.")
+                    else:
 
-                    if st.button("Mark Attendance"):
+                        if st.button("Mark Attendance"):
 
-                        attendance_df = load_sheet_safe(
-                            attendance_sheet,
-                            ["roll", "name", "subject", "timestamp", "token", "unique_key"]
-                        )
+                            try:
+                                cursor.execute(
+                                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                                    (
+                                        roll,
+                                        name,
+                                        subject_db,
+                                        now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                                        token
+                                    )
+                                )
 
-                        if unique_key in attendance_df.get("unique_key", []).values:
-                            st.warning("Attendance already marked.")
-                            st.stop()
+                                conn.commit()
 
-                        attendance_sheet.append_row([
-                            roll,
-                            name,
-                            subject_db,
-                            (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
-                            token,
-                            unique_key
-                        ])
+                                send_email(gmail, "Attendance Confirmed",
+                                           f"Dear {name}, your attendance is marked.")
 
-                        send_email(
-                            gmail,
-                            "Attendance Confirmation",
-                            f"Dear {name},\n\nYour attendance for {subject_db} has been marked successfully.\n\nPhysics Department"
-                        )
+                                st.success("Attendance Marked Successfully")
 
-                        st.success("Attendance Marked Successfully")
-                        st.stop()
+                            except sqlite3.IntegrityError:
+                                st.warning("Attendance already marked.")
 
         else:
             st.error("QR Expired.")
