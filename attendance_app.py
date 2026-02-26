@@ -109,13 +109,26 @@ if st.session_state["logged_in"]:
     st.sidebar.header("Teacher Panel")
 
     subjects = [
-        "Classical Mechanics",
-        "Quantum Mechanics",
-        "Electrodynamics",
-        "Mathematical Physics",
-        "Nuclear Physics",
-        "Solid State Physics",
-        "QFT"
+        "Mechanics (PHYS101TH)",
+        "Electricity, Magnetism & EMT (PHYS102TH)",
+        "Statistical & Thermal Physics (PHYS201TH)",
+        "Waves and Optics (PHYS202TH)",
+        "Computational Physics (PHYS204TH)",
+        "Electronic Circuits & Metwork Skills (PHYS205TH)",
+        "Modern Physics (PHYS301TH)",
+        "Nuclear and Particle Physics (PHYS304TH)",
+        "Radiation Safety (PHYS307TH)",
+        "Renewable Energy and Energy Harvesting (PHYS310TH)",
+        "Mechanics (PHYS101PR)",
+        "Electricity, Magnetism & EMT (PHYS102PR)",
+        "Statistical & Thermal Physics (PHYS201PR)",
+        "Waves and Optics (PHYS202PR)", 
+        "Computational Physics (PHYS204SE)", 
+        "Electronic Circuits & Metwork Skills (PHYS205SE)",   
+        "Modern Physics (PHYS301PR)", 
+        "Nuclear and Particle Physics (PHYS304TU)",  
+        "Radiation Safety (PHYS307SE)",
+        "Renewable Energy and Energy Harvesting (PHYS310TH)"
     ]
 
     subject = st.sidebar.selectbox("Select Subject", subjects)
