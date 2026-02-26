@@ -238,20 +238,18 @@ if st.session_state["logged_in"]:
         # CSV DOWNLOAD
         #csv_data = attendance_df.to_csv(index=False).encode("utf-8")
         #st.download_button("Download attendance.csv", csv_data, "attendance.csv", "text/csv")
-	# Export Current Subject
-	csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
-	st.download_button(
-	    "Download Current Subject CSV",
-	    csv_subject,
+        # Export Current Subject
+        csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Current Subject CSV",
+            csv_subject,
 	    f"{subject}_attendance.csv",
 	    "text/csv"
         )
-
-
-	# Export All Subjects
-	all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-	csv_all = all_data.to_csv(index=False).encode("utf-8")
-	st.download_button(
+        # Export All Subjects
+        all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+        csv_all = all_data.to_csv(index=False).encode("utf-8")
+        st.download_button(
 	    "Download All Subjects CSV",
 	    csv_all,
 	    "all_attendance.csv",
