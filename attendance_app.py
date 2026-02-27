@@ -344,7 +344,6 @@ def generate_pdf(attendance_df, selected_class, subject, total_sessions, attenda
 # ============================================================
 # TEACHER PANEL
 # ============================================================
-st.write("DEBUG: Teacher panel loaded")
 st.sidebar.markdown("## 🎓 Faculty Dashboard")
 st.sidebar.markdown("---")
 if st.session_state.logged_in:
@@ -428,33 +427,33 @@ if st.session_state.logged_in:
         st.image(buf)
         st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
         
-        st.divider()
-        st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
+    st.divider()
+    st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
 
-        with st.expander("➕ Create New Notice", expanded=True):
+    with st.expander("➕ Create New Notice", expanded=True):
 
-            notice_title = st.text_input("Notice Title")
-            notice_content = st.text_area("Notice Description")
-            notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
+        notice_title = st.text_input("Notice Title")
+        notice_content = st.text_area("Notice Description")
+        notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
 
-            if st.button("📢 Publish Notice"):
+        if st.button("📢 Publish Notice"):
 
-                if notice_title and notice_content:
-                    cursor.execute(
-                    "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
-                    (
-                        notice_title,
-                        notice_content,
-                        notice_link,
-                        now_ist().strftime("%Y-%m-%d %H:%M:%S")
-                    )
+            if notice_title and notice_content:
+                cursor.execute(
+                "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
+                (
+                    notice_title,
+                    notice_content,
+                    notice_link,
+                    now_ist().strftime("%Y-%m-%d %H:%M:%S")
                 )
-                conn.commit()
+            )
+            conn.commit()
 
-                st.success("✅ Notice Published Successfully")
-                st.rerun()
-            else:
-                st.warning("Please fill Title and Description")
+            st.success("✅ Notice Published Successfully")
+            st.rerun()
+        else:
+            st.warning("Please fill Title and Description")
         
 
 
