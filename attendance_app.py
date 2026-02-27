@@ -3,12 +3,30 @@ import qrcode
 import pandas as pd
 import uuid
 import io
+import streamlit.components.v1 as components
+from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime, timedelta, date
 today = date.today()
 import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
 import sqlite3
+
+
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371000
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+    
+CAMPUS_LAT = 31.4492
+CAMPUS_LON = 77.6298
+ALLOWED_RADIUS_METERS = 200
+   
+
 
 # ============================================================
 # PAGE CONFIG
@@ -589,6 +607,51 @@ if token:
         if now_ist() > expiry:
             st.error("QR Expired")
             st.stop()
+            
+        # ================= GEOFENCING START =================
+
+
+        st.markdown("### 📍 Verifying Campus Location...")
+
+
+        components.html("""
+            <script>
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    window.parent.postMessage(
+                        {type: "location", lat: lat, lon: lon},
+                        "*"
+                    );
+                }
+            );
+            </script>
+        """, height=0)
+
+
+        query_params = st.experimental_get_query_params()
+
+
+        if "lat" not in st.session_state or "lon" not in st.session_state:
+            st.warning("Allow location access to continue.")
+            st.stop()
+
+
+        distance = calculate_distance(
+            st.session_state["lat"],
+            st.session_state["lon"],
+            CAMPUS_LAT,
+            CAMPUS_LON
+        )
+
+
+        if distance > ALLOWED_RADIUS_METERS:
+            st.error("❌ You are outside campus. Attendance blocked.")
+            st.stop()
+
+
+    # ================= GEOFENCING END =================
 
 
         # ================= LIVE COUNTER =================
