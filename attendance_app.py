@@ -139,27 +139,25 @@ if st.session_state.logged_in:
         "Select Class",
         ["B.Sc 1", "B.Sc 2", "B.Sc 3"]
     )
-	# ================= SUBJECT MAPPING BY CLASS =================
-	class_subjects = {
-		"B.Sc 1": [
-			"Mechanics (PHYS101TH)",
-			"Electricity & Magnetism (PHYS102TH)"
-		],
-		"B.Sc 2": [
-			"Waves & Optics (PHYS202TH)",
-			"Statistical Physics (PHYS201TH)"
-		],
-		"B.Sc 3": [
-			"Modern Physics (PHYS301TH)",
-			"Nuclear & Particle Physics (PHYS304TH)"
-		]
-	}
-
-
-	subjects = class_subjects[selected_class]
-
-
-	subject = st.sidebar.selectbox("Select Subject", subjects)
+    # ================= SUBJECT MAPPING BY CLASS =================
+    class_subjects = {
+        "B.Sc 1": [
+            "Mechanics (PHYS101TH)",
+            "Electricity & Magnetism (PHYS102TH)"
+         ],
+         "B.Sc 2": [
+             "Waves & Optics (PHYS202TH)",
+             "Statistical Physics (PHYS201TH)"
+         ],
+         "B.Sc 3": [
+             "Modern Physics (PHYS301TH)",
+             "Nuclear & Particle Physics (PHYS304TH)"
+         ]
+    }
+    
+    
+    subjects = class_subjects[selected_class]
+    subject = st.sidebar.selectbox("Select Subject", subjects)
     duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
 
     # ================= GENERATE QR =================
