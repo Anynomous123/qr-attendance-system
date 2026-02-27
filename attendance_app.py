@@ -21,7 +21,7 @@ st.markdown("""
 
 /* Background */
 .main {
-    background-color: rgba(244, 251, 246, 0.85);
+    background-color: rgba(224, 242, 255, 0.85);
 }
 
 
@@ -64,7 +64,7 @@ div.stButton > button:hover {
 
 /* Metric Card with glass effect */
 .metric-card {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(224, 242, 255, 0.7);
     backdrop-filter: blur(8px);
     padding: 20px;
     border-radius: 15px;
