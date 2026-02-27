@@ -6,3 +6,4 @@ gspread
 google-auth
 plotly
 reportlab
+streamlit-javascript

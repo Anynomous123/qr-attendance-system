@@ -3,6 +3,7 @@ import qrcode
 import pandas as pd
 import uuid
 import io
+from streamlit_javascript import st_javascript
 import streamlit.components.v1 as components
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime, timedelta, date
@@ -608,39 +609,46 @@ if token:
             st.error("QR Expired")
             st.stop()
             
-        # ================= GEOFENCING START =================
+# ================= GEOFENCING START =================
 
 
         st.markdown("### 📍 Verifying Campus Location...")
 
 
-        components.html("""
-            <script>
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    window.parent.postMessage(
-                        {type: "location", lat: lat, lon: lon},
-                        "*"
-                    );
-                }
-            );
-            </script>
-        """, height=0)
+        location = st_javascript("""
+            await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        resolve({error: "denied"});
+                    }
+                );
+            });
+        """)
 
 
-        query_params = st.experimental_get_query_params()
-
-
-        if "lat" not in st.session_state or "lon" not in st.session_state:
-            st.warning("Allow location access to continue.")
+        if location is None:
             st.stop()
 
 
+        if "error" in location:
+            st.error("❌ Location permission denied. Cannot mark attendance.")
+            st.stop()
+
+
+        CAMPUS_LAT = 31.4435 # 🔁 Replace with your college latitude
+        CAMPUS_LON = 77.6291 # 🔁 Replace with your college longitude
+        ALLOWED_RADIUS_METERS = 200
+
+
         distance = calculate_distance(
-            st.session_state["lat"],
-            st.session_state["lon"],
+            location["lat"],
+            location["lon"],
             CAMPUS_LAT,
             CAMPUS_LON
         )
