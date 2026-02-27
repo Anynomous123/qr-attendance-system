@@ -243,7 +243,7 @@ with header_col2:
         G. B. Pant Memorial Govt. College Rampur Bushahr 
         </h1>
         <h4 style='margin-top:0px;'>
-        Shimla 72001
+        Shimla 172001
         </h4>
         <p style='font-size:18px; margin-top:10px;'>
         Department of Physics – QR Smart Attendance System
