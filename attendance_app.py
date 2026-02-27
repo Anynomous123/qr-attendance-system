@@ -16,19 +16,54 @@ import sqlite3
 st.set_page_config(page_title="QR Attendance System", layout="wide")
 st.markdown("""
 <style>
+
+
+/* Background */
+.main {
+    background-color: #f4fbf6;
+}
+
+
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #e9f7ef;
+    background: linear-gradient(180deg, #198754, #0f5132);
+    color: white;
 }
+
+
+/* Sidebar text */
+section[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+
+/* Buttons */
 div.stButton > button {
-    background-color: #198754;
+    background: linear-gradient(90deg, #20c997, #198754);
     color: white;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
+    font-weight: 600;
+    padding: 8px 16px;
 }
+
+
 div.stButton > button:hover {
-    background-color: #146c43;
+    background: linear-gradient(90deg, #198754, #146c43);
     color: white;
 }
+
+
+/* Metric Card */
+.metric-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+
 </style>
 """, unsafe_allow_html=True)
 # ============================================================
@@ -301,12 +336,58 @@ if st.session_state.logged_in:
 
     #st.subheader("📋 Live Attendance Record")
     #st.dataframe(attendance_df, use_container_width=True)
-    st.markdown("## 📋 Live Attendance Record")
-    col1, col2 = st.columns([2,1])
+    st.markdown("## 📊 Attendance Dashboard")
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+    total_present = len(attendance_df)
+
+
+    total_sessions = pd.read_sql_query(
+        "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
+        conn,
+        params=(subject,)
+    )["total"][0]
+
+
+    attendance_percent = 0
+    if total_sessions > 0 and total_present > 0:
+        attendance_percent = round((total_present / total_sessions) * 100, 2)
+
+
     with col1:
-        st.dataframe(attendance_df, use_container_width=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Total Present</h3>
+            <h1 style="color:#198754;">{total_present}</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
     with col2:
-        st.metric("Total Students Present", len(attendance_df))
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Total Sessions</h3>
+            <h1 style="color:#0d6efd;">{total_sessions}</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Attendance %</h3>
+            <h1 style="color:#dc3545;">{attendance_percent}%</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
+    st.dataframe(attendance_df, use_container_width=True)
 
     if not attendance_df.empty:
 
@@ -328,7 +409,22 @@ if st.session_state.logged_in:
         st.subheader("📊 Attendance % Summary")
         st.dataframe(merged, use_container_width=True)
 
-        fig = px.bar(merged, x="roll", y="Attendance_%")
+        #fig = px.bar(merged, x="roll", y="Attendance_%")
+        fig = px.bar(
+            merged,
+            x="roll",
+            y="Attendance_%",
+            color="Attendance_%",
+            color_continuous_scale="Greens"
+        )
+
+
+        fig.update_layout(
+           plot_bgcolor="white",
+           paper_bgcolor="white",
+           title="Attendance Percentage by Student",
+           title_x=0.3
+        )
         st.plotly_chart(fig, use_container_width=True)
 
         # EXPORT CURRENT SUBJECT
@@ -357,10 +453,15 @@ if st.session_state.logged_in:
 st.divider()
 #st.header("Student Attendance")
 st.markdown("""
----
 ## 🎓 Student Attendance Portal
-Please Scan the QR and enter your Roll Number
-""")
+<div style='background:linear-gradient(90deg,#20c997,#198754);
+padding:15px;
+border-radius:10px;
+color:white;
+font-size:18px;'>
+Scan the QR Code and Enter Your Roll Number
+</div>
+""", unsafe_allow_html=True)
 
 query = st.experimental_get_query_params()
 token = query.get("token", [None])[0]
