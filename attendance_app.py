@@ -270,7 +270,7 @@ from datetime import datetime
 
 
 
-def generate_pdf(attendance_df, class_name, subject, total_sessions, attendance_percent):
+def generate_pdf(attendance_df, selected_class, subject, total_sessions, attendance_percent):
 
 
     buffer = io.BytesIO()
@@ -297,7 +297,7 @@ def generate_pdf(attendance_df, class_name, subject, total_sessions, attendance_
 
     # Report Details
     elements.append(Paragraph(
-        f"Class: {class_name}", styles['Normal']))
+        f"Class: {selected_class}", styles['Normal']))
     elements.append(Paragraph(
         f"Subject: {subject}", styles['Normal']))
     elements.append(Paragraph(
@@ -473,26 +473,27 @@ if st.session_state.logged_in:
 
 
     st.dataframe(attendance_df, use_container_width=True)
-    st.markdown("### 📥 Download PDF Report")
 
-
-    pdf_file = generate_pdf(
-        attendance_df,
-        class_name,
-        subject,
-        total_sessions,
-        attendance_percent
-    )
-
-
-    st.download_button(
-        label="📄 Download Attendance Report (PDF)",
-        data=pdf_file,
-        file_name=f"{class_name}_{subject}_Attendance_Report.pdf",
-        mime="application/pdf"
-    )
 
     if not attendance_df.empty:
+        st.markdown("### 📥 Download PDF Report")
+
+
+        pdf_file = generate_pdf(
+            attendance_df,
+            selected_class,
+            subject,
+            total_sessions,
+            attendance_percent
+        )
+
+
+        st.download_button(
+            label="📄 Download Attendance Report (PDF)",
+            data=pdf_file,
+            file_name=f"{selected_class}_{subject}_Attendance_Report.pdf",
+            mime="application/pdf"
+        )
 
         total_sessions = pd.read_sql_query(
             "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
