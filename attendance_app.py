@@ -3,29 +3,12 @@ import qrcode
 import pandas as pd
 import uuid
 import io
-from streamlit_javascript import st_javascript
-import streamlit.components.v1 as components
-from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime, timedelta, date
 today = date.today()
 import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
 import sqlite3
-
-
-
-def calculate_distance(lat1, lon1, lat2, lon2):
-    R = 6371000
-    dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
-    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    return R * c
-    
-
-   
-
 
 # ============================================================
 # PAGE CONFIG
@@ -197,39 +180,6 @@ else:
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
 
-# ============================================================
-# TITLE
-# ============================================================
-
-#st.title("📚 QR Based Attendance System – Physics Department")	
-#st.markdown("""
-# 📚 QR Attendance System
-### 🏫 Physics Department
-#""")
-# ============================================================
-# UNIVERSITY BRANDED HEADER
-# ============================================================
-
-
-#header_col1, header_col2 = st.columns([1, 6])
-
-
-#with header_col1:
- #   st.image("logo.png", width=90)
-
-
-#with header_col2:
-#    st.markdown("""
- #   <h1 style='margin-bottom:0px;'>G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla</h1>
- #   <h3 style='margin-top:0px; color: gray;'>Department of Physics</h3>
- #   <p style='font-size:18px;'>QR Based Smart Attendance System</p>
-  #  """, unsafe_allow_html=True)
-
-
-#st.markdown("<hr style='border:2px solid #1f77b4;'>", unsafe_allow_html=True)
-
-
-#st.divider()
 # ============================================================
 # UNIVERSITY BRANDED HEADER - GREEN THEME
 # ============================================================
@@ -607,115 +557,6 @@ if token:
             st.error("QR Expired")
             st.stop()
             
-#        # ================= GEOFENCING START =================
-#
-#
-#        st.markdown("### 📍 Verifying Campus Location...")
-#
-#
-#        location = st_javascript("""
-#            await new Promise((resolve) => {
-#                navigator.geolocation.getCurrentPosition(
-#                    (position) => {
-#                        resolve({
-#                            lat: position.coords.latitude,
-#                            lon: position.coords.longitude
-#                        });
-#                    },
-#                    (error) => {
-#                        resolve("denied");
-#                    }
-#                );
-#            });
-#        """)
-#
-#
-#        if location is None:
-#            st.stop()
-#
-#
-#        # 🔥 SAFE TYPE CHECK
-#        if not isinstance(location, dict):
-#            st.error("❌ Location permission denied or unavailable.")
-#            st.stop()
-#
-#
-#        CAMPUS_LAT = 31.4492
-#        CAMPUS_LON = 77.6298
-#        ALLOWED_RADIUS_METERS = 200
-#
-#
-#        distance = calculate_distance(
-#            location["lat"],
-#            location["lon"],
-#            CAMPUS_LAT,
-#            CAMPUS_LON
-#        )
-#
-#
-#        if distance > ALLOWED_RADIUS_METERS:
-#            st.error("❌ You are outside campus. Attendance blocked.")
-#            st.stop()
-#
-#
-#        # ================= GEOFENCING END =================
-
-# ================= GEOFENCING START =================
-
-
-        st.markdown("### 📍 Verifying Campus Location...")
-        
-        
-        location = None
-        
-        
-        for _ in range(3): # try 3 times
-            location = st_javascript("""
-                await new Promise((resolve) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            resolve({
-                                lat: position.coords.latitude,
-                                lon: position.coords.longitude
-                            });
-                        },
-                        (error) => {
-                            resolve(null);
-                        }
-                    );
-                });
-            """)
-        
-        
-            if isinstance(location, dict):
-                break
-        
-        
-            if not isinstance(location, dict):
-                st.warning("⚠ Please allow location access and refresh the page.")
-                st.stop()
-        
-        
-            CAMPUS_LAT = 31.4492
-            CAMPUS_LON = 77.6298 # 🔁 Replace with your real campus longitude
-            ALLOWED_RADIUS_METERS = 200
-        
-        
-            distance = calculate_distance(
-                location["lat"],
-                location["lon"],
-                CAMPUS_LAT,
-                CAMPUS_LON
-            )
-        
-        
-            if distance > ALLOWED_RADIUS_METERS:
-                st.error("❌ You are outside campus. Attendance blocked.")
-                st.stop()
-        
-        
-        # ================= GEOFENCING END =================
-
         # ================= LIVE COUNTER =================
 
 
