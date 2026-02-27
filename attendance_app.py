@@ -356,11 +356,18 @@ if st.session_state.logged_in:
     duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
 
     # ================= GENERATE QR =================
-
+    validity_seconds = st.slider(
+        "Select QR Validity (seconds)",
+        min_value=10,
+        max_value=3600, # 60 minutes
+        value=60,
+        step=10
+    )
+    
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
-        expiry = now_ist() + timedelta(minutes=duration)
+        expiry = now_ist() + timedelta(seconds=validity_seconds)
 
         cursor.execute(
             "INSERT INTO sessions VALUES (?, ?, ?)",
@@ -377,7 +384,7 @@ if st.session_state.logged_in:
         buf.seek(0)
 
         st.image(buf)
-        st.success("QR Generated Successfully")
+        st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
 
     # ================= ANALYTICS =================
 
