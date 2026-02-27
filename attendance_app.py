@@ -571,21 +571,28 @@ Scan the QR Code and Enter Your Roll Number
 query = st.experimental_get_query_params()
 token = query.get("token", [None])[0]
 
+
 if token:
+
 
     cursor.execute("SELECT * FROM sessions WHERE token=?", (token,))
     session = cursor.fetchone()
 
+
     if session:
+
 
         subject_db = session[1]
         expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+
 
         if now_ist() > expiry:
             st.error("QR Expired")
             st.stop()
 
+
         # ================= LIVE COUNTER =================
+
 
         cursor.execute(
             "SELECT COUNT(*) FROM attendance WHERE token=?",
@@ -593,17 +600,23 @@ if token:
         )
         count = cursor.fetchone()[0]
 
+
         st.info(f"👥 Students Marked: {count}")
+
 
         if count >= 100:
             st.error("Attendance Closed: 100 Students Reached")
             st.stop()
 
+
         # ================= ROLL INPUT =================
+
 
         roll = st.text_input("Roll Number")
 
+
         if roll:
+
 
             cursor.execute(
                 "SELECT * FROM students WHERE roll=? AND subject=?",
@@ -611,10 +624,13 @@ if token:
             )
             registered = cursor.fetchone()
 
-            # FIRST TIME REGISTRATION
+
+            # ================= FIRST TIME REGISTRATION =================
             if not registered:
 
+
                 st.subheader("New Registration")
+
 
                 name = st.text_input("Full Name")
                 student_class = st.selectbox(
@@ -624,13 +640,33 @@ if token:
                 gmail = st.text_input("Gmail Address")
                 mobile = st.text_input("Mobile Number")
 
+
                 if st.button("Register & Mark Attendance"):
+
+
+                    # 🔥 CHECK DAILY DUPLICATE
+                    today_date = now_ist().strftime("%Y-%m-%d")
+
+
+                    cursor.execute("""
+                        SELECT 1 FROM attendance
+                        WHERE roll=?
+                        AND subject=?
+                        AND DATE(timestamp)=?
+                    """, (roll, subject_db, today_date))
+
+
+                    if cursor.fetchone():
+                        st.warning("⚠ Attendance already marked today for this subject!")
+                        st.stop()
+
 
                     try:
                         cursor.execute(
                             "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
                             (roll, name, student_class, gmail, mobile, subject_db)
                         )
+
 
                         cursor.execute(
                             "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
@@ -643,105 +679,82 @@ if token:
                             )
                         )
 
+
                         conn.commit()
+
+
                         send_email(
                             gmail,
                             "Attendance Confirmed",
                             f"Dear {name}, your attendance is marked."
                         )
 
-                        st.success("Registered & Attendance Marked")
+
+                        st.success("✅ Registered & Attendance Marked")
+
 
                     except sqlite3.IntegrityError:
                         st.warning("Already registered or attendance marked.")
 
-            # ALREADY REGISTERED
+
+            # ================= ALREADY REGISTERED =================
             else:
+
 
                 name = registered[1]
                 gmail = registered[3]
 
-                cursor.execute(
-                    "SELECT * FROM attendance WHERE roll=? AND token=?",
-                    (roll, token)
-                )
 
-                if cursor.fetchone():
-                    st.warning("Attendance already marked.")
-                else:
-
-                    if st.button("Mark Attendance"):
-                        if qr_data:
-                            student_roll = extracted_roll
-                            student_name = extracted_name
+                if st.button("Mark Attendance"):
 
 
-                            today = datetime.now().strftime("%d-%m-%Y")
+                    # 🔥 CHECK DAILY DUPLICATE (MAIN FIX)
+                    today_date = now_ist().strftime("%Y-%m-%d")
 
 
-                            # ✅ ---- ADD DUPLICATE CHECK HERE ----
-                            already_marked = attendance_df[
-                                (attendance_df["Roll No"] == student_roll) &
-                                (attendance_df["Subject"] == subject) &
-                                (attendance_df["Class"] == selected_class) &
-                                (attendance_df["Date"] == today)
-                            ]  
+                    cursor.execute("""
+                        SELECT 1 FROM attendance
+                        WHERE roll=?
+                        AND subject=?
+                        AND DATE(timestamp)=?
+                    """, (roll, subject_db, today_date))
 
 
-                            if not already_marked.empty:
-                                st.warning("⚠ Attendance already marked for this session!")
+                    if cursor.fetchone():
+                        st.warning("⚠ Attendance already marked today for this subject!")
+                        st.stop()
 
 
-                            else:
-                                # ✅ ONLY SAVE IF NOT DUPLICATE
-                                new_entry = {
-                                    "Roll No": student_roll,
-                                    "Name": student_name,
-                                    "Class": selected_class,
-                                    "Subject": subject,
-                                    "Date": today,
-                                    "Time": datetime.now().strftime("%H:%M:%S")
-                            }
-
-
-                            attendance_df = pd.concat(
-                                [attendance_df, pd.DataFrame([new_entry])],
-                                ignore_index=True
+                    try:
+                        cursor.execute(
+                            "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                            (
+                                roll,
+                                name,
+                                subject_db,
+                                now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                                token
                             )
+                        )
+                        conn.commit()
 
 
-                            attendance_df.to_csv("attendance.csv", index=False)
+                        send_email(
+                            gmail,
+                            "Attendance Confirmed",
+                            f"Dear {name}, your attendance is marked."
+                        )
 
 
-                            st.success("✅ Attendance Marked Successfully!")
+                        st.success("✅ Attendance Marked Successfully")
 
-                        try:
-                            cursor.execute(
-                                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
-                                (
-                                    roll,
-                                    name,
-                                    subject_db,
-                                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                                    token
-                                )
-                            )
 
-                            conn.commit()
-                            send_email(
-                                gmail,
-                                "Attendance Confirmed",
-                                f"Dear {name}, your attendance is marked."
-                            )
+                    except sqlite3.IntegrityError:
+                        st.warning("Attendance already marked.")
 
-                            st.success("Attendance Marked Successfully")
 
-                        except sqlite3.IntegrityError:
-                            st.warning("Attendance already marked.")
-
-    else:
-        st.error("Invalid QR Code.")
-        
+        else:
+            st.error("Invalid QR Code.")
         
 st.markdown("""
 <hr style='border:1px solid #198754;'>
