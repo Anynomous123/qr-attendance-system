@@ -607,59 +607,114 @@ if token:
             st.error("QR Expired")
             st.stop()
             
-        # ================= GEOFENCING START =================
+#        # ================= GEOFENCING START =================
+#
+#
+#        st.markdown("### 📍 Verifying Campus Location...")
+#
+#
+#        location = st_javascript("""
+#            await new Promise((resolve) => {
+#                navigator.geolocation.getCurrentPosition(
+#                    (position) => {
+#                        resolve({
+#                            lat: position.coords.latitude,
+#                            lon: position.coords.longitude
+#                        });
+#                    },
+#                    (error) => {
+#                        resolve("denied");
+#                    }
+#                );
+#            });
+#        """)
+#
+#
+#        if location is None:
+#            st.stop()
+#
+#
+#        # 🔥 SAFE TYPE CHECK
+#        if not isinstance(location, dict):
+#            st.error("❌ Location permission denied or unavailable.")
+#            st.stop()
+#
+#
+#        CAMPUS_LAT = 31.4492
+#        CAMPUS_LON = 77.6298
+#        ALLOWED_RADIUS_METERS = 200
+#
+#
+#        distance = calculate_distance(
+#            location["lat"],
+#            location["lon"],
+#            CAMPUS_LAT,
+#            CAMPUS_LON
+#        )
+#
+#
+#        if distance > ALLOWED_RADIUS_METERS:
+#            st.error("❌ You are outside campus. Attendance blocked.")
+#            st.stop()
+#
+#
+#        # ================= GEOFENCING END =================
+
+# ================= GEOFENCING START =================
 
 
         st.markdown("### 📍 Verifying Campus Location...")
-
-
-        location = st_javascript("""
-            await new Promise((resolve) => {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        resolve("denied");
-                    }
-                );
-            });
-        """)
-
-
-        if location is None:
-            st.stop()
-
-
-        # 🔥 SAFE TYPE CHECK
-        if not isinstance(location, dict):
-            st.error("❌ Location permission denied or unavailable.")
-            st.stop()
-
-
-        CAMPUS_LAT = 31.4492
-        CAMPUS_LON = 77.6298
-        ALLOWED_RADIUS_METERS = 200
-
-
-        distance = calculate_distance(
-            location["lat"],
-            location["lon"],
-            CAMPUS_LAT,
-            CAMPUS_LON
-        )
-
-
-        if distance > ALLOWED_RADIUS_METERS:
-            st.error("❌ You are outside campus. Attendance blocked.")
-            st.stop()
-
-
+        
+        
+        location = None
+        
+        
+        for _ in range(3): # try 3 times
+            location = st_javascript("""
+                await new Promise((resolve) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            resolve({
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude
+                            });
+                        },
+                        (error) => {
+                            resolve(null);
+                        }
+                    );
+                });
+            """)
+        
+        
+            if isinstance(location, dict):
+                break
+        
+        
+            if not isinstance(location, dict):
+                st.warning("⚠ Please allow location access and refresh the page.")
+                st.stop()
+        
+        
+            CAMPUS_LAT = 31.4492
+            CAMPUS_LON = 77.6298 # 🔁 Replace with your real campus longitude
+            ALLOWED_RADIUS_METERS = 200
+        
+        
+            distance = calculate_distance(
+                location["lat"],
+                location["lon"],
+                CAMPUS_LAT,
+                CAMPUS_LON
+            )
+        
+        
+            if distance > ALLOWED_RADIUS_METERS:
+                st.error("❌ You are outside campus. Attendance blocked.")
+                st.stop()
+        
+        
         # ================= GEOFENCING END =================
-
 
         # ================= LIVE COUNTER =================
 
