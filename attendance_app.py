@@ -15,34 +15,7 @@ import sqlite3
 # ============================================================
 
 st.set_page_config(page_title="QR Attendance System", layout="wide")
-# ============================================================
-# 📢 FLASH CLASS NOTICES
-# ============================================================
 
-st.markdown("## 📢 Class Notices")
-
-notices_df = pd.read_sql_query(
-    "SELECT * FROM notices ORDER BY id DESC LIMIT 5",
-    conn
-)
-
-if not notices_df.empty:
-    for _, row in notices_df.iterrows():
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(90deg, rgba(0,123,255,0.1), rgba(0,86,179,0.1));
-            animation: pulse 2s infinite;
-            padding: 12px;
-            border-left: 5px solid #007bff;
-            border-radius: 8px;
-            margin-bottom: 10px;">
-            <b>{row['title']}</b><br>
-            {row['content']}<br>
-            {"🔗 <a href='"+row['link']+"' target='_blank'>Open Resource</a>" if row['link'] else ""}
-        </div>
-        """, unsafe_allow_html=True)
-else:
-    st.info("No notices yet.")
 st.markdown("""
 <style>
 
@@ -172,6 +145,34 @@ CREATE TABLE IF NOT EXISTS notices (
 
 conn.commit()
 
+# ============================================================
+# 📢 FLASH CLASS NOTICES
+# ============================================================
+
+st.markdown("## 📢 Class Notices")
+
+notices_df = pd.read_sql_query(
+    "SELECT * FROM notices ORDER BY id DESC LIMIT 5",
+    conn
+)
+
+if not notices_df.empty:
+    for _, row in notices_df.iterrows():
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(90deg, rgba(0,123,255,0.1), rgba(0,86,179,0.1));
+            animation: pulse 2s infinite;
+            padding: 12px;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            margin-bottom: 10px;">
+            <b>{row['title']}</b><br>
+            {row['content']}<br>
+            {"🔗 <a href='"+row['link']+"' target='_blank'>Open Resource</a>" if row['link'] else ""}
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("No notices yet.")
 # ============================================================
 # EMAIL FUNCTION
 # ============================================================
