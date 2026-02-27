@@ -344,6 +344,7 @@ def generate_pdf(attendance_df, selected_class, subject, total_sessions, attenda
 # ============================================================
 # TEACHER PANEL
 # ============================================================
+st.write("DEBUG: Teacher panel loaded")
 st.sidebar.markdown("## 🎓 Faculty Dashboard")
 st.sidebar.markdown("---")
 if st.session_state.logged_in:
