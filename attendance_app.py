@@ -24,16 +24,23 @@ st.markdown("""
 }
 
 
-/* Sidebar */
+/* Sidebar background */
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #198754, #0f5132);
-    color: white;
 }
 
 
-/* Sidebar text */
-section[data-testid="stSidebar"] * {
+/* Sidebar labels only */
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] .stMarkdown {
     color: white !important;
+    font-weight: 600;
+}
+
+
+/* Fix selectbox text color */
+section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
+    color: black !important;
 }
 
 
