@@ -685,22 +685,22 @@ if token:
                                 (attendance_df["Subject"] == subject) &
                                 (attendance_df["Class"] == selected_class) &
                                 (attendance_df["Date"] == today)
-                        ]
+                            ]  
 
 
-                        if not already_marked.empty:
-                            st.warning("⚠ Attendance already marked for this session!")
+                            if not already_marked.empty:
+                                st.warning("⚠ Attendance already marked for this session!")
 
 
-                        else:
-                            # ✅ ONLY SAVE IF NOT DUPLICATE
-                            new_entry = {
-                                "Roll No": student_roll,
-                                "Name": student_name,
-                                "Class": selected_class,
-                                "Subject": subject,
-                                "Date": today,
-                                "Time": datetime.now().strftime("%H:%M:%S")
+                            else:
+                                # ✅ ONLY SAVE IF NOT DUPLICATE
+                                new_entry = {
+                                    "Roll No": student_roll,
+                                    "Name": student_name,
+                                    "Class": selected_class,
+                                    "Subject": subject,
+                                    "Date": today,
+                                    "Time": datetime.now().strftime("%H:%M:%S")
                             }
 
 
