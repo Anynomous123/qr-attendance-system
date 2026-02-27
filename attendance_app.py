@@ -15,6 +15,34 @@ import sqlite3
 # ============================================================
 
 st.set_page_config(page_title="QR Attendance System", layout="wide")
+# ============================================================
+# 📢 FLASH CLASS NOTICES
+# ============================================================
+
+st.markdown("## 📢 Class Notices")
+
+notices_df = pd.read_sql_query(
+    "SELECT * FROM notices ORDER BY id DESC LIMIT 5",
+    conn
+)
+
+if not notices_df.empty:
+    for _, row in notices_df.iterrows():
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(90deg, rgba(0,123,255,0.1), rgba(0,86,179,0.1));
+            animation: pulse 2s infinite;
+            padding: 12px;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            margin-bottom: 10px;">
+            <b>{row['title']}</b><br>
+            {row['content']}<br>
+            {"🔗 <a href='"+row['link']+"' target='_blank'>Open Resource</a>" if row['link'] else ""}
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("No notices yet.")
 st.markdown("""
 <style>
 
@@ -130,6 +158,17 @@ CREATE TABLE IF NOT EXISTS attendance (
     PRIMARY KEY (roll, token)
 )
 """)
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS notices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    content TEXT,
+    link TEXT,
+    timestamp TEXT
+)
+""")
+
 
 conn.commit()
 
@@ -386,6 +425,24 @@ if st.session_state.logged_in:
 
         st.image(buf)
         st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
+        
+        st.divider()
+        st.subheader("📝 Add New Notice (Teacher)")
+
+        title = st.text_input("Notice Title")
+        content = st.text_area("Notice Description")
+        link = st.text_input("Optional Link (YouTube / PDF / PPT)")
+
+        if st.button("Publish Notice"):
+            if title and content:
+                cursor.execute(
+                    "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
+                    (title, content, link, now_ist().strftime("%Y-%m-%d %H:%M:%S"))
+                )
+                conn.commit()
+                st.success("✅ Notice Published Successfully")
+            else:
+                st.warning("Please fill title and content")
 
     # ================= ANALYTICS =================
 
