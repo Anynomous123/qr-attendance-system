@@ -3,7 +3,8 @@ import qrcode
 import pandas as pd
 import uuid
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+today = date.today()
 import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
@@ -670,6 +671,49 @@ if token:
                 else:
 
                     if st.button("Mark Attendance"):
+                        if qr_data:
+                            student_roll = extracted_roll
+                            student_name = extracted_name
+
+
+                            today = datetime.now().strftime("%d-%m-%Y")
+
+
+                            # ✅ ---- ADD DUPLICATE CHECK HERE ----
+                            already_marked = attendance_df[
+                                (attendance_df["Roll No"] == student_roll) &
+                                (attendance_df["Subject"] == subject) &
+                                (attendance_df["Class"] == selected_class) &
+                                (attendance_df["Date"] == today)
+                        ]
+
+
+                        if not already_marked.empty:
+                            st.warning("⚠ Attendance already marked for this session!")
+
+
+                        else:
+                            # ✅ ONLY SAVE IF NOT DUPLICATE
+                            new_entry = {
+                                "Roll No": student_roll,
+                                "Name": student_name,
+                                "Class": selected_class,
+                                "Subject": subject,
+                                "Date": today,
+                                "Time": datetime.now().strftime("%H:%M:%S")
+                            }
+
+
+                            attendance_df = pd.concat(
+                                [attendance_df, pd.DataFrame([new_entry])],
+                                ignore_index=True
+                            )
+
+
+                            attendance_df.to_csv("attendance.csv", index=False)
+
+
+                            st.success("✅ Attendance Marked Successfully!")
 
                         try:
                             cursor.execute(
