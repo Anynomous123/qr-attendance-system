@@ -27,7 +27,7 @@ st.markdown("""
 
 /* Sidebar background */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(25, 135, 84, 0.7), rgba(15, 81, 50, 0.7));
+    background: linear-gradient(180deg, rgba(0, 123, 255, 0.7), rgba(0, 86, 179, 0.7));
 }
 
 
@@ -47,7 +47,7 @@ section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
 
 /* Buttons */
 div.stButton > button {
-    background: linear-gradient(90deg, rgba(32, 201, 151, 0.7), rgba(25, 135, 84, 0.7));
+    background: linear-gradient(90deg, rgba(0, 123, 255, 0.7), rgba(0, 86, 179, 0.7));
     color: white;
     border-radius: 10px;
     border: none;
@@ -57,7 +57,7 @@ div.stButton > button {
 
 
 div.stButton > button:hover {
-    background: linear-gradient(90deg, rgba(25, 135, 84, 1), rgba(20, 108, 67, 1));
+    background: linear-gradient(90deg, rgba(0, 86, 179, 1), rgba(0, 64, 133, 1));
     color: white;
 }
 
