@@ -189,7 +189,7 @@ else:
 st.markdown("""
 <style>
 .header-container {
-    background: linear-gradient(90deg, #0f5132, #198754);
+    background: linear-gradient(90deg, rgba(0, 123, 255, 0.7), rgba(0, 86, 179, 0.7));
     padding: 20px;
     border-radius: 10px;
     color: white;
@@ -534,7 +534,7 @@ st.divider()
 #st.header("Student Attendance")
 st.markdown("""
 ## 🎓 Student Attendance Portal
-<div style='background:linear-gradient(90deg,#20c997,#198754);
+<div style='background:linear-gradient(90deg,rgba(0, 123, 255, 0.7),rgba(0, 86, 179, 0.7));
 padding:15px;
 border-radius:10px;
 color:white;
@@ -731,8 +731,8 @@ if token:
             st.error("Invalid QR Code.")
         
 st.markdown("""
-<hr style='border:1px solid #198754;'>
-<center style='color:#198754; font-weight:bold;'>
+<hr style='border:1px solid rgba(0, 123, 255, 0.7);'>
+<center style='color:rgba(0, 123, 255, 0.7); font-weight:bold;'>
 © 2026 G. B. Pant Memorial Govt. College, Rampur Bushahr, Shimla
 Department of Physics | Smart Attendance Monitoring System
 </center>
