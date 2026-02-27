@@ -21,13 +21,13 @@ st.markdown("""
 
 /* Background */
 .main {
-    background-color: #f4fbf6;
+    background-color: rgba(244, 251, 246, 0.85);
 }
 
 
 /* Sidebar background */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #198754, #0f5132);
+    background: linear-gradient(180deg, rgba(25, 135, 84, 0.9), rgba(15, 81, 50, 0.9));
 }
 
 
@@ -47,7 +47,7 @@ section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
 
 /* Buttons */
 div.stButton > button {
-    background: linear-gradient(90deg, #20c997, #198754);
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.9), rgba(25, 135, 84, 0.9));
     color: white;
     border-radius: 10px;
     border: none;
@@ -57,14 +57,15 @@ div.stButton > button {
 
 
 div.stButton > button:hover {
-    background: linear-gradient(90deg, #198754, #146c43);
+    background: linear-gradient(90deg, rgba(25, 135, 84, 1), rgba(20, 108, 67, 1));
     color: white;
 }
 
 
-/* Metric Card */
+/* Metric Card with glass effect */
 .metric-card {
-    background: white;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
@@ -359,7 +360,7 @@ if st.session_state.logged_in:
     validity_seconds = st.slider(
         "Select QR Validity (seconds)",
         min_value=10,
-        max_value=3600, # 60 minutes
+        max_value=300, # 5 minutes
         value=60,
         step=10
     )
