@@ -451,6 +451,7 @@ if st.session_state.logged_in:
                 conn.commit()
 
                 st.success("✅ Notice Published Successfully")
+                st.rerun()
             else:
                 st.warning("Please fill Title and Description")
         
