@@ -139,7 +139,6 @@ if st.session_state.logged_in:
         "Select Class",
         ["B.Sc 1", "B.Sc 2", "B.Sc 3"]
     )
-
 	# ================= SUBJECT MAPPING BY CLASS =================
 	class_subjects = {
 		"B.Sc 1": [
