@@ -14,7 +14,23 @@ import sqlite3
 # ============================================================
 
 st.set_page_config(page_title="QR Attendance System", layout="wide")
-
+st.markdown("""
+<style>
+section[data-testid="stSidebar"] {
+    background-color: #e9f7ef;
+}
+div.stButton > button {
+    background-color: #198754;
+    color: white;
+    border-radius: 8px;
+    border: none;
+}
+div.stButton > button:hover {
+    background-color: #146c43;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
 # ============================================================
 # IST TIME FUNCTION
 # ============================================================
@@ -135,25 +151,66 @@ else:
 # ============================================================
 
 
+#header_col1, header_col2 = st.columns([1, 6])
+
+
+#with header_col1:
+ #   st.image("logo.png", width=90)
+
+
+#with header_col2:
+#    st.markdown("""
+ #   <h1 style='margin-bottom:0px;'>G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla</h1>
+ #   <h3 style='margin-top:0px; color: gray;'>Department of Physics</h3>
+ #   <p style='font-size:18px;'>QR Based Smart Attendance System</p>
+  #  """, unsafe_allow_html=True)
+
+
+#st.markdown("<hr style='border:2px solid #1f77b4;'>", unsafe_allow_html=True)
+
+
+#st.divider()
+# ============================================================
+# UNIVERSITY BRANDED HEADER - GREEN THEME
+# ============================================================
+
+
+st.markdown("""
+<style>
+.header-container {
+    background: linear-gradient(90deg, #0f5132, #198754);
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 header_col1, header_col2 = st.columns([1, 6])
 
 
 with header_col1:
-    st.image("logo.png", width=90)
+    st.image("logo.png", width=95)
 
 
 with header_col2:
     st.markdown("""
-    <h1 style='margin-bottom:0px;'>G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla</h1>
-    <h3 style='margin-top:0px; color: gray;'>Department of Physics</h3>
-    <p style='font-size:18px;'>QR Based Smart Attendance System</p>
+    <div class="header-container">
+        <h1 style='margin-bottom:5px;'>
+        G. B. Pant Memorial Govt. College Rampur Bushahr 
+        </h1>
+        <h4 style='margin-top:0px;'>
+        Shimla 72001
+        </h4>
+        <p style='font-size:18px; margin-top:10px;'>
+        Department of Physics – QR Smart Attendance System
+        </p>
+    </div>
     """, unsafe_allow_html=True)
 
 
-st.markdown("<hr style='border:2px solid #1f77b4;'>", unsafe_allow_html=True)
-
-
-st.divider()
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================
 # TEACHER PANEL
@@ -438,9 +495,9 @@ if token:
         
         
 st.markdown("""
----
-<center>
-© 2026 G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla | Department of Physics
-Smart Attendance Monitoring System
+<hr style='border:1px solid #198754;'>
+<center style='color:#198754; font-weight:bold;'>
+© 2026 G. B. Pant Memorial Govt. College, Rampur Bushahr, Shimla
+Department of Physics | Smart Attendance Monitoring System
 </center>
 """, unsafe_allow_html=True)
