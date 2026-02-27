@@ -430,7 +430,7 @@ if st.session_state.logged_in:
         st.divider()
         st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
 
-        with st.expander("➕ Create New Notice"):
+        with st.expander("➕ Create New Notice", expanded=True):
 
             notice_title = st.text_input("Notice Title")
             notice_content = st.text_area("Notice Description")
