@@ -254,6 +254,84 @@ with header_col2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import pagesizes
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Image
+import io
+from datetime import datetime
+
+
+
+
+def generate_pdf(attendance_df, class_name, subject, total_sessions, attendance_percent):
+
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=pagesizes.A4)
+    elements = []
+
+
+    styles = getSampleStyleSheet()
+
+
+    # University Header
+    elements.append(Paragraph(
+        "<b>G. B. Pant Memorial Govt. College</b>", styles['Title']))
+    elements.append(Paragraph(
+        "Rampur Bushahr, Shimla", styles['Normal']))
+    elements.append(Spacer(1, 0.2 * inch))
+
+
+    # Report Title
+    elements.append(Paragraph(
+        f"<b>Attendance Report</b>", styles['Heading2']))
+    elements.append(Spacer(1, 0.2 * inch))
+
+
+    # Report Details
+    elements.append(Paragraph(
+        f"Class: {class_name}", styles['Normal']))
+    elements.append(Paragraph(
+        f"Subject: {subject}", styles['Normal']))
+    elements.append(Paragraph(
+        f"Total Sessions: {total_sessions}", styles['Normal']))
+    elements.append(Paragraph(
+        f"Attendance Percentage: {attendance_percent}%", styles['Normal']))
+    elements.append(Paragraph(
+        f"Generated On: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles['Normal']))
+
+
+    elements.append(Spacer(1, 0.3 * inch))
+
+
+    # Table Data
+    data = [attendance_df.columns.tolist()] + attendance_df.values.tolist()
+
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.green),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ]))
+
+
+    elements.append(table)
+
+
+    doc.build(elements)
+    buffer.seek(0)
+
+
+    return buffer
 # ============================================================
 # TEACHER PANEL
 # ============================================================
@@ -395,6 +473,24 @@ if st.session_state.logged_in:
 
 
     st.dataframe(attendance_df, use_container_width=True)
+    st.markdown("### 📥 Download PDF Report")
+
+
+    pdf_file = generate_pdf(
+        attendance_df,
+        class_name,
+        subject,
+        total_sessions,
+        attendance_percent
+    )
+
+
+    st.download_button(
+        label="📄 Download Attendance Report (PDF)",
+        data=pdf_file,
+        file_name=f"{class_name}_{subject}_Attendance_Report.pdf",
+        mime="application/pdf"
+    )
 
     if not attendance_df.empty:
 
