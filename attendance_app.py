@@ -27,7 +27,7 @@ st.markdown("""
 
 /* Sidebar background */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(25, 135, 84, 0.9), rgba(15, 81, 50, 0.9));
+    background: linear-gradient(180deg, rgba(25, 135, 84, 0.7), rgba(15, 81, 50, 0.7));
 }
 
 
@@ -47,7 +47,7 @@ section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
 
 /* Buttons */
 div.stButton > button {
-    background: linear-gradient(90deg, rgba(32, 201, 151, 0.9), rgba(25, 135, 84, 0.9));
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.7), rgba(25, 135, 84, 0.7));
     color: white;
     border-radius: 10px;
     border: none;
@@ -64,7 +64,7 @@ div.stButton > button:hover {
 
 /* Metric Card with glass effect */
 .metric-card {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(8px);
     padding: 20px;
     border-radius: 15px;
