@@ -125,7 +125,14 @@ else:
 # TITLE
 # ============================================================
 
-st.title("📚 QR Based Attendance System – Physics Department")
+#st.title("📚 QR Based Attendance System – Physics Department")	
+st.markdown("""
+# 📚 QR Attendance System
+### 🏫 Physics Department
+""")
+
+
+st.divider()
 
 # ============================================================
 # TEACHER PANEL
@@ -172,6 +179,13 @@ if st.session_state.logged_in:
     
     subjects = class_subjects[selected_class]
     subject = st.sidebar.selectbox("Select Subject", subjects)
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"""
+    ### 📘 Current Selection
+    - **Class:** {selected_class}
+    - **Subject:** {subject}
+    """)
+
     duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
 
     # ================= GENERATE QR =================
@@ -206,8 +220,14 @@ if st.session_state.logged_in:
         params=(subject,)
     )
 
-    st.subheader("📋 Live Attendance Record")
-    st.dataframe(attendance_df, use_container_width=True)
+    #st.subheader("📋 Live Attendance Record")
+    #st.dataframe(attendance_df, use_container_width=True)
+    st.markdown("## 📋 Live Attendance Record")
+    col1, col2 = st.columns([2,1])
+    with col1:
+        st.dataframe(attendance_df, use_container_width=True)
+    with col2:
+        st.metric("Total Students Present", len(attendance_df))
 
     if not attendance_df.empty:
 
@@ -256,7 +276,12 @@ if st.session_state.logged_in:
 # ============================================================
 
 st.divider()
-st.header("Student Attendance")
+#st.header("Student Attendance")
+st.markdown("""
+---
+## 🎓 Student Attendance Portal
+Scan QR and enter roll number
+""")
 
 query = st.experimental_get_query_params()
 token = query.get("token", [None])[0]
