@@ -23,9 +23,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
     
-CAMPUS_LAT = 31.4492
-CAMPUS_LON = 77.6298
-ALLOWED_RADIUS_METERS = 200
+
    
 
 
@@ -609,14 +607,14 @@ if token:
             st.error("QR Expired")
             st.stop()
             
-# ================= GEOFENCING START =================
+        # ================= GEOFENCING START =================
 
 
         st.markdown("### 📍 Verifying Campus Location...")
 
 
         location = st_javascript("""
-            await new Promise((resolve, reject) => {
+            await new Promise((resolve) => {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         resolve({
@@ -625,7 +623,7 @@ if token:
                         });
                     },
                     (error) => {
-                        resolve({error: "denied"});
+                        resolve("denied");
                     }
                 );
             });
@@ -636,13 +634,14 @@ if token:
             st.stop()
 
 
-        if "error" in location:
-            st.error("❌ Location permission denied. Cannot mark attendance.")
+        # 🔥 SAFE TYPE CHECK
+        if not isinstance(location, dict):
+            st.error("❌ Location permission denied or unavailable.")
             st.stop()
 
 
-        CAMPUS_LAT = 31.4435 # 🔁 Replace with your college latitude
-        CAMPUS_LON = 77.6291 # 🔁 Replace with your college longitude
+        CAMPUS_LAT = 31.4492
+        CAMPUS_LON = 77.6298
         ALLOWED_RADIUS_METERS = 200
 
 
@@ -659,7 +658,7 @@ if token:
             st.stop()
 
 
-    # ================= GEOFENCING END =================
+        # ================= GEOFENCING END =================
 
 
         # ================= LIVE COUNTER =================
