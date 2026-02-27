@@ -126,10 +126,31 @@ else:
 # ============================================================
 
 #st.title("📚 QR Based Attendance System – Physics Department")	
-st.markdown("""
+#st.markdown("""
 # 📚 QR Attendance System
 ### 🏫 Physics Department
-""")
+#""")
+# ============================================================
+# UNIVERSITY BRANDED HEADER
+# ============================================================
+
+
+header_col1, header_col2 = st.columns([1, 6])
+
+
+with header_col1:
+    st.image("logo.png", width=90)
+
+
+with header_col2:
+    st.markdown("""
+    <h1 style='margin-bottom:0px;'>G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla</h1>
+    <h3 style='margin-top:0px; color: gray;'>Department of Physics</h3>
+    <p style='font-size:18px;'>QR Based Smart Attendance System</p>
+    """, unsafe_allow_html=True)
+
+
+st.markdown("<hr style='border:2px solid #1f77b4;'>", unsafe_allow_html=True)
 
 
 st.divider()
@@ -137,7 +158,8 @@ st.divider()
 # ============================================================
 # TEACHER PANEL
 # ============================================================
-
+st.sidebar.markdown("## 🎓 Faculty Dashboard")
+st.sidebar.markdown("---")
 if st.session_state.logged_in:
 
     st.sidebar.header("Teacher Panel")
@@ -280,7 +302,7 @@ st.divider()
 st.markdown("""
 ---
 ## 🎓 Student Attendance Portal
-Scan QR and enter roll number
+Please Scan the QR and enter your Roll Number
 """)
 
 query = st.experimental_get_query_params()
@@ -413,3 +435,12 @@ if token:
 
     else:
         st.error("Invalid QR Code.")
+        
+        
+st.markdown("""
+---
+<center>
+© 2026 G. B. Pant Memorial Govt. College Rampur Bushahr, Shimla | Department of Physics
+Smart Attendance Monitoring System
+</center>
+""", unsafe_allow_html=True)
