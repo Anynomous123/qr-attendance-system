@@ -455,6 +455,48 @@ if st.session_state.logged_in:
         else:
             st.warning("Please fill Title and Description")
         
+        
+    # ============================================================
+    # DELETE OLD NOTICES
+    # ============================================================
+
+    st.divider()
+    st.subheader("🗑 Manage / Delete Notices")
+
+    notices_df = pd.read_sql_query(
+        "SELECT * FROM notices ORDER BY id DESC",
+        conn
+    )
+
+    if not notices_df.empty:
+
+        for _, row in notices_df.iterrows():
+
+            col1, col2 = st.columns([6, 1])
+
+            with col1:
+                st.markdown(f"""
+                **{row['title']}**  
+                {row['content']}  
+                🕒 {row['timestamp']}
+                """)
+
+            with col2:
+                if st.button("❌", key=f"delete_{row['id']}"):
+
+                    cursor.execute(
+                        "DELETE FROM notices WHERE id = ?",
+                        (row['id'],)
+                    )
+                    conn.commit()
+
+                    st.success("Notice Deleted")
+                    st.rerun()
+
+            st.markdown("---")
+
+    else:
+        st.info("No notices available to delete.")
 
 
     # ================= ANALYTICS =================
