@@ -143,15 +143,29 @@ if st.session_state.logged_in:
     class_subjects = {
         "B.Sc 1": [
             "Mechanics (PHYS101TH)",
-            "Electricity & Magnetism (PHYS102TH)"
+            "Electricity, Magnetism & EMT (PHYS102TH)",
+            "Mechanics (PHYS101PR)",
+            "Electricity, Magnetism & EMT (PHYS102PR)"    
          ],
          "B.Sc 2": [
-             "Waves & Optics (PHYS202TH)",
-             "Statistical Physics (PHYS201TH)"
+             "Statistical & Thermal Physics (PHYS201TH)",
+             "Waves and Optics (PHYS202TH)",
+             "Computational Physics (PHYS204TH)",
+             "Electronic Circuits & Metwork Skills (PHYS205TH)",
+             "Statistical & Thermal Physics (PHYS201PR)",
+             "Waves and Optics (PHYS202PR)", 
+             "Computational Physics (PHYS204SE)", 
+             "Electronic Circuits & Metwork Skills (PHYS205SE)"
          ],
          "B.Sc 3": [
              "Modern Physics (PHYS301TH)",
-             "Nuclear & Particle Physics (PHYS304TH)"
+             "Nuclear and Particle Physics (PHYS304TH)",
+             "Radiation Safety (PHYS307TH)",
+             "Renewable Energy and Energy Harvesting (PHYS310TH)",
+             "Modern Physics (PHYS301PR)", 
+             "Nuclear and Particle Physics (PHYS304TU)",  
+             "Radiation Safety (PHYS307SE)",
+             "Renewable Energy and Energy Harvesting (PHYS310TH)"
          ]
     }
     
