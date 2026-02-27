@@ -148,7 +148,6 @@ conn.commit()
 # ============================================================
 # 📢 FLASH CLASS NOTICES
 # ============================================================
-
 st.markdown("## 📢 Class Notices")
 
 notices_df = pd.read_sql_query(
@@ -169,10 +168,11 @@ if not notices_df.empty:
             <b>{row['title']}</b><br>
             {row['content']}<br>
             {"🔗 <a href='"+row['link']+"' target='_blank'>Open Resource</a>" if row['link'] else ""}
+            <br><small>Posted on: {row['timestamp']}</small>
         </div>
         """, unsafe_allow_html=True)
 else:
-    st.info("No notices yet.")
+    st.info("No notices available.")
 # ============================================================
 # EMAIL FUNCTION
 # ============================================================
@@ -428,22 +428,33 @@ if st.session_state.logged_in:
         st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
         
         st.divider()
-        st.subheader("📝 Add New Notice (Teacher)")
+        st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
 
-        title = st.text_input("Notice Title")
-        content = st.text_area("Notice Description")
-        link = st.text_input("Optional Link (YouTube / PDF / PPT)")
+        with st.expander("➕ Create New Notice"):
 
-        if st.button("Publish Notice"):
-            if title and content:
-                cursor.execute(
+            notice_title = st.text_input("Notice Title")
+            notice_content = st.text_area("Notice Description")
+            notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
+
+            if st.button("📢 Publish Notice"):
+
+                if notice_title and notice_content:
+                    cursor.execute(
                     "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
-                    (title, content, link, now_ist().strftime("%Y-%m-%d %H:%M:%S"))
+                    (
+                        notice_title,
+                        notice_content,
+                        notice_link,
+                        now_ist().strftime("%Y-%m-%d %H:%M:%S")
+                    )
                 )
                 conn.commit()
+
                 st.success("✅ Notice Published Successfully")
             else:
-                st.warning("Please fill title and content")
+                st.warning("Please fill Title and Description")
+        
+
 
     # ================= ANALYTICS =================
 
