@@ -524,12 +524,20 @@ if st.session_state.logged_in:
 
     total_present = len(attendance_df)
 
+    sessions_df = pd.read_sql_query("""
+        SELECT DISTINCT subject, DATE(expiry) as session_date
+        FROM sessions
+    """, conn)
 
-    total_sessions = pd.read_sql_query(
-        "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
-        conn,
-        params=(subject,)
-    )["total"][0]
+    total_sessions = len(sessions_df)
+
+    st.metric("Total Sessions", total_sessions)
+    s
+    #total_sessions = pd.read_sql_query(
+    #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
+    #    conn,
+    #    params=(subject,)
+    #)["total"][0]
 
 
     attendance_percent = 0
