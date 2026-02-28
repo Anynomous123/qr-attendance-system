@@ -569,8 +569,8 @@ if st.session_state.logged_in:
     with col3:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>Attendance %</h3>
-            <h1 style="color:#dc3545;">{Avg_Attendance / Session}</h1>
+            <h3>Avg_Attendance / Session</h3>
+            <h1 style="color:#dc3545;">{avg_attendance/session}</h1>
         </div>
         """, unsafe_allow_html=True)
 
