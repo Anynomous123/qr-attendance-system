@@ -661,18 +661,30 @@ if st.session_state.logged_in:
         #st.dataframe(low)
         
         
-        def attendance_color(val):
-            if val < 75:
-                return "color: red; font-weight: bold"
-            else:
-                return "color: green; font-weight: bold"
+        low = merged[merged["Attendance_%"] < 75]
 
-        styled = merged.style.applymap(
-            attendance_color,
-            subset=["Attendance_%"]
-        )
+        st.subheader("⚠ Below 75% Attendance")
 
-        st.dataframe(styled, use_container_width=True)
+        def highlight_low(row):
+            return ["background-color: #ffcccc"] * len(row)
+
+        styled_low = low.style.apply(highlight_low, axis=1)
+
+        st.dataframe(styled_low, use_container_width=True)
+        
+        
+        #def attendance_color(val):
+            #if val < 75:
+           #     return "color: red; font-weight: bold"
+          #  else:
+         #       return "color: green; font-weight: bold"
+
+        #styled = merged.style.applymap(
+          #  attendance_color,
+         #   subset=["Attendance_%"]
+        #)
+
+        #st.dataframe(styled, use_container_width=True)
 
         # EXPORT CURRENT SUBJECT
         csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
