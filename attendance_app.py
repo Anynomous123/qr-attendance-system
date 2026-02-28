@@ -534,7 +534,7 @@ if st.session_state.logged_in:
 
     total_sessions = len(sessions_df)
 
-    st.metric("Total Sessions", total_sessions)
+    #st.metric("Total Sessions", total_sessions)
     
     #total_sessions = pd.read_sql_query(
     #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
@@ -545,7 +545,7 @@ if st.session_state.logged_in:
 
     attendance_percent = 0
     if total_sessions > 0 and total_present > 0:
-        attendance_percent = round((total_present / total_sessions) * 100, 2)
+        attendance_percent = round((total_present / total_sessions), 2)
 
 
     with col1:
@@ -570,7 +570,7 @@ if st.session_state.logged_in:
         st.markdown(f"""
         <div class="metric-card">
             <h3>Attendance %</h3>
-            <h1 style="color:#dc3545;">{attendance_percent}%</h1>
+            <h1 style="color:#dc3545;">{Avg_Attendance / Session}</h1>
         </div>
         """, unsafe_allow_html=True)
 
