@@ -508,17 +508,12 @@ if st.session_state.logged_in:
 
     # ================= ANALYTICS =================
 
-    #attendance_df = pd.read_sql_query(
-    #    "SELECT * FROM attendance WHERE subject=?",
-    #    conn,
-    #    params=(subject,)
-    #)
-    #student_roll = st.session_state.roll
-    attendance_df = pd.read_sql_query("""
-        SELECT DISTINCT subject, DATE(timestamp) as att_date
-        FROM attendance
-        WHERE subject = ?
-    """, conn, params=(subject,))
+    attendance_df = pd.read_sql_query(
+        "SELECT * FROM attendance WHERE subject=?",
+        conn,
+        params=(subject,)
+    )
+
 
     total_present = len(attendance_df)
 
