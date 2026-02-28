@@ -613,6 +613,8 @@ if st.session_state.logged_in:
             GROUP BY subject
         """, conn)
         
+        #total_classes = total_classes_df["Total_Classes"][0]
+        
         
         attendance_count = attendance_df.groupby(
             ["roll", "subject"]
@@ -623,6 +625,15 @@ if st.session_state.logged_in:
             merged["Classes_Attended"] /
             merged["Total_Classes"] * 100
         ).round(2)
+        
+        merged["Absent_Days"] = (
+            merged["Total_Classes"] - merged["Classes_Attended"]
+        )
+
+        # Prevent negative
+        merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
+
+        merged["Fine (₹)"] = merged["Absent_Days"] * 1
 
         st.subheader("📊 Attendance % Summary")
         st.dataframe(merged, use_container_width=True)
