@@ -773,10 +773,19 @@ if token:
 
 
         # ================= ROLL INPUT =================
-
-        if not st.session_state.logged_in:
-            st.warning("Please login first")
-            st.stop()
+	# LOGIN / ROLL INPUT
+        if not st.session_state.get("logged_in", False):
+            roll = st.text_input("Enter Your Roll Number")
+            if roll:
+                st.session_state.roll = roll
+                st.session_state.logged_in = True
+                st.success(f"Logged in as {roll}")
+            else:
+                st.warning("Please enter your Roll Number to login")
+                st.stop()
+        #if not st.session_state.logged_in:
+         #   st.warning("Please login first")
+          #  st.stop()
 
         roll = st.session_state.get("roll")
         #roll = st.text_input("Roll Number")
