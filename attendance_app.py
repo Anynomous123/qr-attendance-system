@@ -661,7 +661,10 @@ if st.session_state.logged_in:
         #st.dataframe(low)
         
         
-        low = merged[merged["Attendance_%"] < 75]
+        #low = merged[merged["Attendance_%"] < 75]
+        low = merged[merged["Attendance_%"] < 75].copy()
+        low["Attendance_%"] = low["Attendance_%"].round().astype(int)
+
 
         st.subheader("⚠ Below 75% Attendance")
 
