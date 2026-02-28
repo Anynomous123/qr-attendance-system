@@ -205,10 +205,12 @@ def send_email(to_email, subject, body):
 
 
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if "faculty_logged_in" not in st.session_state:
+    st.session_state.faculty_logged_in = False
+if "faculty_name" not in st.session_state:
+    st.session_state.faculty_name = ""
 
-def login():
+def faculty_login():
     st.sidebar.subheader("Faculty Login")
     user = st.sidebar.text_input("Username")
     pwd = st.sidebar.text_input("Password", type="password")
@@ -222,12 +224,13 @@ def login():
         else:
             st.sidebar.error("Invalid Credentials")
 
-if not st.session_state.logged_in:
-    login()
+if not st.session_state.faculty_logged_in:
+    faculty_login()
 else:
     st.sidebar.success(f"Logged in as {st.session_state.faculty_name}")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
+        st.session_state.faculty_name = ""
 
 # ============================================================
 # UNIVERSITY BRANDED HEADER - GREEN THEME
@@ -774,18 +777,31 @@ if token:
 
         # ================= ROLL INPUT =================
 	# LOGIN / ROLL INPUT
-        if not st.session_state.get("logged_in", False):
+        #if  not st.session_state.get("logged_in", False):
+         #   roll = st.text_input("Enter Your Roll Number")
+         #   if roll:
+        #        st.session_state.roll = roll
+        #        st.session_state.logged_in = True
+        #        st.success(f"Logged in as {roll}")
+        #   else:
+        #        st.warning("Please enter your Roll Number to login")
+        #        st.stop()
+        #if not st.session_state.logged_in:
+         #   st.warning("Please login first")
+          #  st.stop()
+        # STUDENT LOGIN
+        if "student_logged_in" not in st.session_state:
+            st.session_state.student_logged_in = False
+
+        if not st.session_state.student_logged_in:
             roll = st.text_input("Enter Your Roll Number")
-            if roll:
+            if roll_input:
+                st.session_state.student_logged_in = True
                 st.session_state.roll = roll
-                st.session_state.logged_in = True
                 st.success(f"Logged in as {roll}")
             else:
                 st.warning("Please enter your Roll Number to login")
                 st.stop()
-        #if not st.session_state.logged_in:
-         #   st.warning("Please login first")
-          #  st.stop()
 
         roll = st.session_state.get("roll")
         #roll = st.text_input("Roll Number")
