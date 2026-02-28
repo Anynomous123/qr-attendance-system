@@ -13,11 +13,13 @@ import sqlite3
 # ============================================================
 # PAGE CONFIG
 # ============================================================
-if "roll" not in st.session_state:
-    st.session_state.roll = None
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+ 
+if "roll" not in st.session_state:
+    st.session_state.roll = None
+    
+    
 st.set_page_config(page_title="QR Attendance System", layout="wide")
 
 st.markdown("""
@@ -200,6 +202,12 @@ def send_email(to_email, subject, body):
 # ============================================================
 # LOGIN SYSTEM
 # ============================================================
+if not st.session_state.logged_in:
+    st.warning("Please login first")
+    st.stop()
+
+roll = st.session_state.get("roll")
+
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -774,11 +782,11 @@ if token:
 
         #roll = st.text_input("Roll Number")
         #roll = st.session_state.roll
-        if not st.session_state.logged_in:
-            st.warning("Please login first")
-            st.stop()
+        #if not st.session_state.logged_in:
+         #   st.warning("Please login first")
+          #  st.stop()
 
-        roll = st.session_state.get("roll")
+        #roll = st.session_state.get("roll")
 
 
         if roll:
