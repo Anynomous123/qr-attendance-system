@@ -202,11 +202,7 @@ def send_email(to_email, subject, body):
 # ============================================================
 # LOGIN SYSTEM
 # ============================================================
-if not st.session_state.logged_in:
-    st.warning("Please login first")
-    st.stop()
 
-roll = st.session_state.get("roll")
 
 
 if "logged_in" not in st.session_state:
@@ -723,7 +719,11 @@ if st.session_state.logged_in:
 # ============================================================
 # STUDENT SECTION
 # ============================================================
+if not st.session_state.logged_in:
+    st.warning("Please login first")
+    st.stop()
 
+roll = st.session_state.get("roll")
 st.divider()
 #st.header("Student Attendance")
 st.markdown("""
