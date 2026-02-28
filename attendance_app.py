@@ -517,7 +517,7 @@ if st.session_state.logged_in:
         SELECT DISTINCT subject, DATE(timestamp) as att_date
         FROM attendance
         WHERE student_id = ?
-    """, conn, params=(student_id,))
+    """, conn, params=(roll,))
 
     total_present = len(attendance_df)
 
