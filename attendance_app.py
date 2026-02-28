@@ -719,7 +719,6 @@ if st.session_state.logged_in:
 # ============================================================
 # STUDENT SECTION
 # ============================================================
-xx
 st.divider()
 #st.header("Student Attendance")
 st.markdown("""
