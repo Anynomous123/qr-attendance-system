@@ -719,11 +719,7 @@ if st.session_state.logged_in:
 # ============================================================
 # STUDENT SECTION
 # ============================================================
-if not st.session_state.logged_in:
-    st.warning("Please login first")
-    st.stop()
-
-roll = st.session_state.get("roll")
+xx
 st.divider()
 #st.header("Student Attendance")
 st.markdown("""
@@ -779,7 +775,11 @@ if token:
 
         # ================= ROLL INPUT =================
 
+        if not st.session_state.logged_in:
+            st.warning("Please login first")
+            st.stop()
 
+        roll = st.session_state.get("roll")
         #roll = st.text_input("Roll Number")
         #roll = st.session_state.roll
         #if not st.session_state.logged_in:
