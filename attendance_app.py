@@ -532,7 +532,7 @@ if st.session_state.logged_in:
     total_sessions = len(sessions_df)
 
     st.metric("Total Sessions", total_sessions)
-    s
+    
     #total_sessions = pd.read_sql_query(
     #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
     #    conn,
