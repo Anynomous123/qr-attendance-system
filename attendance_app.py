@@ -513,11 +513,12 @@ if st.session_state.logged_in:
     #    conn,
     #    params=(subject,)
     #)
+    student_roll = st.session_state.roll
     attendance_df = pd.read_sql_query("""
         SELECT DISTINCT subject, DATE(timestamp) as att_date
         FROM attendance
-        WHERE student_id = ?
-    """, conn, params=(roll,))
+        WHERE roll = ?
+    """, conn, params=(student_roll,))
 
     total_present = len(attendance_df)
 
@@ -799,6 +800,7 @@ if token:
 
 
                         st.success("✅ Registered & Attendance Marked")
+                        st.session_state.roll = roll # 👈 ADD THIS
 
 
                     except sqlite3.IntegrityError:
