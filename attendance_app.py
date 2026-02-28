@@ -768,7 +768,8 @@ if token:
         # ================= ROLL INPUT =================
 
 
-        roll = st.text_input("Roll Number")
+        #roll = st.text_input("Roll Number")
+        roll = st.session_state.roll
 
 
         if roll:
