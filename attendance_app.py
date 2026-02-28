@@ -476,21 +476,28 @@ if st.session_state.logged_in:
 
             with col1:
                 st.markdown(f"""
-                **{row['title']}**  
-                {row['content']}  
-                🕒 {row['timestamp']}
-                """)
+                <div style="
+                    font-size: 12px;
+                    line-height: 1.2;
+                    padding: 4px 0;
+                ">
+                    <b>{row['title']}</b><br>
+                    {row['content']}<br>
+                    <span style="color:gray;">🕒 {row['timestamp']}</span>
+                </div>
+            """, unsafe_allow_html=True)
 
             with col2:
-                if st.button("❌", key=f"delete_{row['id']}"):
+                st.markdown('<div class="small-delete">', unsafe_allow_html=True)
+                delete_clicked = st.button("❌", key=f"delete_{row['id']}")
+                st.markdown('</div>', unsafe_allow_html=True)
 
+                if delete_clicked:
                     cursor.execute(
                         "DELETE FROM notices WHERE id = ?",
                         (row['id'],)
                     )
                     conn.commit()
-
-                    st.success("Notice Deleted")
                     st.rerun()
 
             st.markdown("---")
