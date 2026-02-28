@@ -655,6 +655,10 @@ if st.session_state.logged_in:
            title_x=0.3
         )
         st.plotly_chart(fig, use_container_width=True)
+        
+        low = merged[merged["Attendance_%"] < 75]
+        st.subheader("⚠ Below 75% Attendance")
+        st.dataframe(low)
 
         # EXPORT CURRENT SUBJECT
         csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
