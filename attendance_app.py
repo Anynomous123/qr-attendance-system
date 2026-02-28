@@ -13,7 +13,11 @@ import sqlite3
 # ============================================================
 # PAGE CONFIG
 # ============================================================
+if "roll" not in st.session_state:
+    st.session_state.roll = None
 
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 st.set_page_config(page_title="QR Attendance System", layout="wide")
 
 st.markdown("""
@@ -769,7 +773,12 @@ if token:
 
 
         #roll = st.text_input("Roll Number")
-        roll = st.session_state.roll
+        #roll = st.session_state.roll
+        if not st.session_state.logged_in:
+            st.warning("Please login first")
+            st.stop()
+
+        roll = st.session_state.get("roll")
 
 
         if roll:
