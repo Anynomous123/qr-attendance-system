@@ -508,11 +508,18 @@ if st.session_state.logged_in:
 
     # ================= ANALYTICS =================
 
-    attendance_df = pd.read_sql_query(
-        "SELECT * FROM attendance WHERE subject=?",
-        conn,
-        params=(subject,)
-    )
+    #attendance_df = pd.read_sql_query(
+    #    "SELECT * FROM attendance WHERE subject=?",
+    #    conn,
+    #    params=(subject,)
+    #)
+    attendance_df = pd.read_sql_query("""
+        SELECT DISTINCT subject, DATE(timestamp) as att_date
+        FROM attendance
+        WHERE student_id = ?
+    """, conn, params=(student_id,))
+
+    total_present = len(attendance_df)
 
     #st.subheader("📋 Live Attendance Record")
     #st.dataframe(attendance_df, use_container_width=True)
@@ -522,7 +529,7 @@ if st.session_state.logged_in:
     col1, col2, col3 = st.columns(3)
 
 
-    total_present = len(attendance_df)
+    #total_present = len(attendance_df)
 
     sessions_df = pd.read_sql_query("""
         SELECT DISTINCT subject, DATE(expiry) as session_date
