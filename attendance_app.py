@@ -795,7 +795,7 @@ if token:
 
         if not st.session_state.student_logged_in:
             roll = st.text_input("Enter Your Roll Number")
-            if roll_input:
+            if roll:
                 st.session_state.student_logged_in = True
                 st.session_state.roll = roll
                 st.success(f"Logged in as {roll}")
