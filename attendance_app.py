@@ -601,11 +601,19 @@ if st.session_state.logged_in:
             mime="application/pdf"
         )
 
-        total_sessions = pd.read_sql_query(
-            "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
-            conn
-        )
-
+        #total_sessions = pd.read_sql_query(
+        #    "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
+        #    conn
+        #)
+        
+        total_sessions = pd.read_sql_query("""
+            SELECT subject,
+                COUNT(DISTINCT DATE(expiry)) as Total_Classes
+            FROM sessions
+            GROUP BY subject
+        """, conn)
+        
+        
         attendance_count = attendance_df.groupby(
             ["roll", "subject"]
         ).size().reset_index(name="Classes_Attended")
