@@ -518,16 +518,27 @@ if st.session_state.logged_in:
 
 
     # ================= ANALYTICS =================
-
+    # Load ALL attendance for selected subject
+    #attendance_df = pd.read_sql_query(
+    #    "SELECT * FROM attendance WHERE subject=? ORDER BY date DESC, time DESC",
+    #    conn,
+    #    params=(subject,)
+    #)
     attendance_df = pd.read_sql_query(
-        "SELECT * FROM attendance WHERE subject=?",
+        """
+        SELECT *,
+               DATE(timestamp) as session_date
+        FROM attendance
+        WHERE subject=?
+        ORDER BY timestamp DESC
+        """,
         conn,
         params=(subject,)
     )
 
-
     total_present = len(attendance_df)
-
+    # Count distinct session dates for that subject
+    sessions_count = attendance_df["session_date"].nunique()
     #st.subheader("📋 Live Attendance Record")
     #st.dataframe(attendance_df, use_container_width=True)
     st.markdown("## 📊 Attendance Dashboard")
@@ -537,14 +548,19 @@ if st.session_state.logged_in:
 
 
     #total_present = len(attendance_df)
-
+    # Count total sessions ONLY for selected subject
     sessions_df = pd.read_sql_query("""
-        SELECT DISTINCT subject, DATE(expiry) as session_date
+        SELECT COUNT(DISTINCT DATE(expiry)) as total
         FROM sessions
-    """, conn)
+        WHERE subject=?
+    """, conn, params=(subject,))
+    #sessions_df = pd.read_sql_query("""
+     #   SELECT DISTINCT subject, DATE(expiry) as session_date
+      #  FROM sessions
+    #""", conn)
 
-    total_sessions = len(sessions_df)
-
+    #total_sessions = len(sessions_df)
+    total_sessions = sessions_df["total"][0]
     #st.metric("Total Sessions", total_sessions)
     
     #total_sessions = pd.read_sql_query(
@@ -553,10 +569,14 @@ if st.session_state.logged_in:
     #    params=(subject,)
     #)["total"][0]
 
-
+    
+    # Calculate attendance per session
     attendance_percent = 0
-    if total_sessions > 0 and total_present > 0:
-        attendance_percent = round((total_present / total_sessions), 2)
+    if total_sessions > 0:
+        attendance_percent = round(total_present / total_sessions, 2)
+    #attendance_percent = 0
+    #if total_sessions > 0 and total_present > 0:
+     #   attendance_percent = round((total_present / total_sessions), 2)
 
 
     with col1:
@@ -572,7 +592,7 @@ if st.session_state.logged_in:
         st.markdown(f"""
         <div class="metric-card">
             <h3>Total Sessions</h3>
-            <h1 style="color:#0d6efd;">{total_sessions}</h1>
+            <h1 style="color:#0d6efd;">{sessions_count}</h1>
         </div>
         """, unsafe_allow_html=True)
 
