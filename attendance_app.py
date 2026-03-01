@@ -9,10 +9,7 @@ import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
 import sqlite3
-# ================= ROLE SELECTOR =================
-st.sidebar.title("Portal Access")
-portal = st.sidebar.radio("Select Portal", ["Faculty", "Student"])
-# ============================================================
+
 # PAGE CONFIG
 # ============================================================
 if "logged_in" not in st.session_state:
@@ -104,6 +101,12 @@ conn = sqlite3.connect(
 
 cursor = conn.cursor()
 cursor.execute("PRAGMA journal_mode=WAL;")
+
+
+# ================= ROLE SELECTOR =================
+st.sidebar.title("Portal Access")
+portal = st.sidebar.radio("Select Portal", ["Faculty", "Student"])
+# ============================================================
 
 # ============================================================
 # CREATE TABLES
