@@ -802,7 +802,7 @@ if now_ist() > expiry:
 # ------------------ LIVE COUNTER ------------------
 
 cursor.execute(
-    "SELECT COUNT(*) FROM attendance WHERE token=?",
+    "SELECT COUNT(*) FROM attendance WHERE UPPER(token)=?",
     (passkey,)
 )
 count = cursor.fetchone()[0]
