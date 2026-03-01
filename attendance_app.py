@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     subject TEXT,
     timestamp TEXT,
     token TEXT,
+    status TEXT DEFAULT 'Present',
     PRIMARY KEY (roll, token)
 )
 """)
@@ -153,6 +154,10 @@ CREATE TABLE IF NOT EXISTS notices (
 )
 """)
 
+try:
+    cursor.execute("ALTER TABLE attendance ADD COLUMN status TEXT DEFAULT 'Present'")
+except:
+    pass
 
 conn.commit()
 
@@ -362,6 +367,73 @@ if portal == "Faculty":
         st.markdown(f"## 🔑 PASS KEY: `{token}`")
         st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
         st.success(f"QR Generated (Valid for {validity_seconds} seconds)")
+        
+    st.divider()
+    st.subheader("✏ Manual Attendance Management")
+    
+    
+    attendance_date = st.date_input("Select Date", today)
+    
+    manual_roll = st.text_input("Student Roll Number")
+    manual_status = st.selectbox(
+        "Select Status",
+        ["Present", "Absent", "Leave (Fine Exempted)"]
+    )
+    
+    if st.button("Add / Update Attendance"):
+    
+        if manual_roll:
+    
+            cursor.execute("""
+                SELECT name FROM students
+                WHERE roll=? AND subject=?
+            """, (manual_roll.upper(), subject))
+    
+            student = cursor.fetchone()
+    
+            if student:
+    
+                name = student[0]
+    
+                cursor.execute("""
+                    DELETE FROM attendance
+                    WHERE roll=? AND subject=? AND DATE(timestamp)=?
+                """, (manual_roll.upper(), subject, attendance_date))
+    
+                cursor.execute("""
+                    INSERT INTO attendance
+                    (roll, name, subject, timestamp, token, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    manual_roll.upper(),
+                    name,
+                    subject,
+                    f"{attendance_date} 09:00:00",
+                    "MANUAL",
+                    manual_status
+                ))
+    
+                conn.commit()
+                st.success("✅ Attendance Updated Successfully")
+    
+            else:
+                st.error("Student not registered for this subject")
+            
+    st.subheader("🗑 Delete Attendance Record")
+    
+    delete_roll = st.text_input("Enter Roll to Delete")
+    delete_date = st.date_input("Select Date to Delete", today)
+    
+    if st.button("Delete Attendance"):
+    
+        cursor.execute("""
+            DELETE FROM attendance
+            WHERE roll=? AND subject=? AND DATE(timestamp)=?
+        """, (delete_roll.upper(), subject, delete_date))
+    
+        conn.commit()
+        st.success("Attendance Record Deleted")
+    
 
 ###################################################################################################################
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -651,25 +723,76 @@ if portal == "Faculty":
         
         #total_classes = total_classes_df["Total_Classes"][0]
         
+        attendance_df = pd.read_sql_query("""
+            SELECT *,
+                DATE(timestamp) as session_date
+            FROM attendance
+            WHERE subject=?
+        """, conn, params=(subject,))
         
         attendance_count = attendance_df.groupby(
             ["roll", "subject"]
         ).size().reset_index(name="Classes_Attended")
-
-        merged = attendance_count.merge(total_sessions, on="subject")
+        
+        present_df = attendance_df[
+            attendance_df["status"] == "Present"
+        ]
+        
+        leave_df = attendance_df[
+            attendance_df["status"] == "Leave (Fine Exempted)"
+        ]
+        
+        present_count = present_df.groupby(
+            ["roll", "subject"]
+        ).size().reset_index(name="Present_Count")
+        
+        leave_count = leave_df.groupby(
+            ["roll", "subject"]
+        ).size().reset_index(name="Leave_Count")
+        
+        merged = present_count.merge(
+            leave_count,
+            on=["roll", "subject"],
+            how="left"
+        ).fillna(0)
+        
+        merged = merged.merge(total_sessions, on="subject")
+        
         merged["Attendance_%"] = (
-            merged["Classes_Attended"] /
-            merged["Total_Classes"] * 100
+            merged["Present_Count"] /
+            (merged["Total_Classes"] - merged["Leave_Count"])
+            * 100
         ).round(2)
         
         merged["Absent_Days"] = (
-            merged["Total_Classes"] - merged["Classes_Attended"]
+            merged["Total_Classes"]
+            - merged["Present_Count"]
+            - merged["Leave_Count"]
         )
-
-        # Prevent negative
+        
         merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
-
+        
         merged["Fine (₹)"] = merged["Absent_Days"] * 1
+#        merged = attendance_count.merge(total_sessions, on="subject")
+#        #merged["Attendance_%"] = (
+#        #    merged["Classes_Attended"] /
+#        #    merged["Total_Classes"] * 100
+#        #).round(2)
+#        attendance_df = pd.read_sql_query("""
+#            SELECT *,
+#                DATE(timestamp) as session_date
+#            FROM attendance
+#            WHERE subject=?
+#        """, conn, params=(subject,))
+#        
+#        merged["Absent_Days"] = (
+#            merged["Total_Classes"] - merged["Classes_Attended"]
+#        )
+#
+#        # Prevent negative
+#        merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
+#
+#        merged["Fine (₹)"] = merged["Absent_Days"] * 1
 
         st.subheader("📊 Attendance % Summary")
         st.dataframe(merged, use_container_width=True)
