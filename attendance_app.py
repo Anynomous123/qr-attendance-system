@@ -443,306 +443,306 @@ if portal == "Faculty":
         return buffer
     
             
-        st.divider()
-        st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
-    
-        with st.expander("➕ Create New Notice", expanded=True):
-    
-            notice_title = st.text_input("Notice Title")
-            notice_content = st.text_area("Notice Description")
-            notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
-    
-            if st.button("📢 Publish Notice"):
-    
-                if notice_title and notice_content:
-                    cursor.execute(
-                    "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
-                    (
-                        notice_title,
-                        notice_content,
-                        notice_link,
-                        now_ist().strftime("%Y-%m-%d %H:%M:%S")
-                    )
+    st.divider()
+    st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
+
+    with st.expander("➕ Create New Notice", expanded=True):
+
+        notice_title = st.text_input("Notice Title")
+        notice_content = st.text_area("Notice Description")
+        notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
+
+        if st.button("📢 Publish Notice"):
+
+            if notice_title and notice_content:
+                cursor.execute(
+                "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
+                (
+                    notice_title,
+                    notice_content,
+                    notice_link,
+                    now_ist().strftime("%Y-%m-%d %H:%M:%S")
                 )
-                conn.commit()
-    
-                st.success("✅ Notice Published Successfully")
-                st.rerun()
-            else:
-                st.warning("Please fill Title and Description")
-            
-            
-        # ============================================================
-        # DELETE OLD NOTICES
-        # ============================================================
-    
-        st.divider()
-        st.subheader("🗑 Manage / Delete Notices")
-    
-        notices_df = pd.read_sql_query(
-            "SELECT * FROM notices ORDER BY id DESC",
-            conn
-        )
-    
-        if not notices_df.empty:
-    
-            for _, row in notices_df.iterrows():
-    
-                col1, col2 = st.columns([6, 1])
-    
-                with col1:
-                    st.markdown(f"""
-                    <div style="
-                        font-size: 12px;
-                        line-height: 1.2;
-                        padding: 4px 0;
-                    ">
-                        <b>{row['title']}</b><br>
-                        {row['content']}<br>
-                        <span style="color:gray;">🕒 {row['timestamp']}</span>
-                    </div>
-                """, unsafe_allow_html=True)
-    
-                with col2:
-                    st.markdown('<div class="small-delete">', unsafe_allow_html=True)
-                    delete_clicked = st.button("❌", key=f"delete_{row['id']}")
-                    st.markdown('</div>', unsafe_allow_html=True)
-    
-                    if delete_clicked:
-                        cursor.execute(
-                            "DELETE FROM notices WHERE id = ?",
-                            (row['id'],)
-                        )
-                        conn.commit()
-                        st.rerun()
-    
-                st.markdown("---")
-    
+            )
+            conn.commit()
+
+            st.success("✅ Notice Published Successfully")
+            st.rerun()
         else:
-            st.info("No notices available to delete.")
+            st.warning("Please fill Title and Description")
+        
+        
+    # ============================================================
+    # DELETE OLD NOTICES
+    # ============================================================
+
+    st.divider()
+    st.subheader("🗑 Manage / Delete Notices")
+
+    notices_df = pd.read_sql_query(
+        "SELECT * FROM notices ORDER BY id DESC",
+        conn
+    )
+
+    if not notices_df.empty:
+
+        for _, row in notices_df.iterrows():
+
+            col1, col2 = st.columns([6, 1])
+
+            with col1:
+                st.markdown(f"""
+                <div style="
+                    font-size: 12px;
+                    line-height: 1.2;
+                    padding: 4px 0;
+                ">
+                    <b>{row['title']}</b><br>
+                    {row['content']}<br>
+                    <span style="color:gray;">🕒 {row['timestamp']}</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+            with col2:
+                st.markdown('<div class="small-delete">', unsafe_allow_html=True)
+                delete_clicked = st.button("❌", key=f"delete_{row['id']}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                if delete_clicked:
+                    cursor.execute(
+                        "DELETE FROM notices WHERE id = ?",
+                        (row['id'],)
+                    )
+                    conn.commit()
+                    st.rerun()
+
+            st.markdown("---")
+
+    else:
+        st.info("No notices available to delete.")
+
+
+    # ================= ANALYTICS =================
+    # Load ALL attendance for selected subject
+    #attendance_df = pd.read_sql_query(
+    #    "SELECT * FROM attendance WHERE subject=? ORDER BY date DESC, time DESC",
+    #    conn,
+    #    params=(subject,)
+    #)
+    attendance_df = pd.read_sql_query(
+        """
+        SELECT *,
+               DATE(timestamp) as session_date
+        FROM attendance
+        WHERE subject=?
+        ORDER BY timestamp DESC
+        """,
+        conn,
+        params=(subject,)
+    )
+
+    total_present = len(attendance_df)
+    # Count distinct session dates for that subject
+    sessions_count = attendance_df["session_date"].nunique()
+    #st.subheader("📋 Live Attendance Record")
+    #st.dataframe(attendance_df, use_container_width=True)
+    st.markdown("## 📊 Attendance Dashboard")
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+    #total_present = len(attendance_df)
+    # Count total sessions ONLY for selected subject
+    sessions_df = pd.read_sql_query("""
+        SELECT COUNT(DISTINCT DATE(expiry)) as total
+        FROM sessions
+        WHERE subject=?
+    """, conn, params=(subject,))
+    #sessions_df = pd.read_sql_query("""
+     #   SELECT DISTINCT subject, DATE(expiry) as session_date
+      #  FROM sessions
+    #""", conn)
+
+    #total_sessions = len(sessions_df)
+    total_sessions = sessions_df["total"][0]
+    #st.metric("Total Sessions", total_sessions)
     
+    #total_sessions = pd.read_sql_query(
+    #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
+    #    conn,
+    #    params=(subject,)
+    #)["total"][0]
+
     
-        # ================= ANALYTICS =================
-        # Load ALL attendance for selected subject
-        #attendance_df = pd.read_sql_query(
-        #    "SELECT * FROM attendance WHERE subject=? ORDER BY date DESC, time DESC",
-        #    conn,
-        #    params=(subject,)
-        #)
-        attendance_df = pd.read_sql_query(
-            """
-            SELECT *,
-                   DATE(timestamp) as session_date
-            FROM attendance
-            WHERE subject=?
-            ORDER BY timestamp DESC
-            """,
-            conn,
-            params=(subject,)
+    # Calculate attendance per session
+    attendance_percent = 0
+    if total_sessions > 0:
+        attendance_percent = round(total_present / total_sessions, 2)
+    #attendance_percent = 0
+    #if total_sessions > 0 and total_present > 0:
+     #   attendance_percent = round((total_present / total_sessions), 2)
+
+
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Total Present</h3>
+            <h1 style="color:#198754;">{total_present}</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Total Sessions</h3>
+            <h1 style="color:#0d6efd;">{sessions_count}</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Avg_Attendance/Session</h3>
+            <h1 style="color:#dc3545;">{attendance_percent}</h1>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
+    st.dataframe(attendance_df, use_container_width=True)
+
+
+    if not attendance_df.empty:
+        st.markdown("### 📥 Download PDF Report")
+
+
+        pdf_file = generate_pdf(
+            attendance_df,
+            selected_class,
+            subject,
+            total_sessions,
+            attendance_percent
         )
-    
-        total_present = len(attendance_df)
-        # Count distinct session dates for that subject
-        sessions_count = attendance_df["session_date"].nunique()
-        #st.subheader("📋 Live Attendance Record")
-        #st.dataframe(attendance_df, use_container_width=True)
-        st.markdown("## 📊 Attendance Dashboard")
-    
-    
-        col1, col2, col3 = st.columns(3)
-    
-    
-        #total_present = len(attendance_df)
-        # Count total sessions ONLY for selected subject
-        sessions_df = pd.read_sql_query("""
-            SELECT COUNT(DISTINCT DATE(expiry)) as total
-            FROM sessions
-            WHERE subject=?
-        """, conn, params=(subject,))
-        #sessions_df = pd.read_sql_query("""
-         #   SELECT DISTINCT subject, DATE(expiry) as session_date
-          #  FROM sessions
-        #""", conn)
-    
-        #total_sessions = len(sessions_df)
-        total_sessions = sessions_df["total"][0]
-        #st.metric("Total Sessions", total_sessions)
-        
+
+
+        st.download_button(
+            label="📄 Download Attendance Report (PDF)",
+            data=pdf_file,
+            file_name=f"{selected_class}_{subject}_Attendance_Report.pdf",
+            mime="application/pdf"
+        )
+
         #total_sessions = pd.read_sql_query(
-        #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
-        #    conn,
-        #    params=(subject,)
-        #)["total"][0]
-    
+        #    "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
+        #    conn
+        #)
         
-        # Calculate attendance per session
-        attendance_percent = 0
-        if total_sessions > 0:
-            attendance_percent = round(total_present / total_sessions, 2)
-        #attendance_percent = 0
-        #if total_sessions > 0 and total_present > 0:
-         #   attendance_percent = round((total_present / total_sessions), 2)
-    
-    
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3>Total Present</h3>
-                <h1 style="color:#198754;">{total_present}</h1>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    
-        with col2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3>Total Sessions</h3>
-                <h1 style="color:#0d6efd;">{sessions_count}</h1>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    
-        with col3:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3>Avg_Attendance/Session</h3>
-                <h1 style="color:#dc3545;">{attendance_percent}</h1>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    
-        st.markdown("<br>", unsafe_allow_html=True)
-    
-    
-        st.dataframe(attendance_df, use_container_width=True)
-    
-    
-        if not attendance_df.empty:
-            st.markdown("### 📥 Download PDF Report")
-    
-    
-            pdf_file = generate_pdf(
-                attendance_df,
-                selected_class,
-                subject,
-                total_sessions,
-                attendance_percent
-            )
-    
-    
-            st.download_button(
-                label="📄 Download Attendance Report (PDF)",
-                data=pdf_file,
-                file_name=f"{selected_class}_{subject}_Attendance_Report.pdf",
-                mime="application/pdf"
-            )
-    
-            #total_sessions = pd.read_sql_query(
-            #    "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
-            #    conn
-            #)
-            
-            total_sessions = pd.read_sql_query("""
-                SELECT subject,
-                    COUNT(DISTINCT DATE(expiry)) as Total_Classes
-                FROM sessions
-                GROUP BY subject
-            """, conn)
-            
-            #total_classes = total_classes_df["Total_Classes"][0]
-            
-            
-            attendance_count = attendance_df.groupby(
-                ["roll", "subject"]
-            ).size().reset_index(name="Classes_Attended")
-    
-            merged = attendance_count.merge(total_sessions, on="subject")
-            merged["Attendance_%"] = (
-                merged["Classes_Attended"] /
-                merged["Total_Classes"] * 100
-            ).round(2)
-            
-            merged["Absent_Days"] = (
-                merged["Total_Classes"] - merged["Classes_Attended"]
-            )
-    
-            # Prevent negative
-            merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
-    
-            merged["Fine (₹)"] = merged["Absent_Days"] * 1
-    
-            st.subheader("📊 Attendance % Summary")
-            st.dataframe(merged, use_container_width=True)
-    
-            #fig = px.bar(merged, x="roll", y="Attendance_%")
-            fig = px.bar(
-                merged,
-                x="roll",
-                y="Attendance_%",
-                color="Attendance_%",
-                color_continuous_scale="Greens"
-            )
-    
-    
-            fig.update_layout(
-               plot_bgcolor="white",
-               paper_bgcolor="white",
-               title="Attendance Percentage by Student",
-               title_x=0.3
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            #low = merged[merged["Attendance_%"] < 75]
-            #st.subheader("⚠ Below 75% Attendance")
-            #st.dataframe(low)
-            
-            
-            #low = merged[merged["Attendance_%"] < 75]
-            low = merged[merged["Attendance_%"] < 75].copy()
-            low["Attendance_%"] = low["Attendance_%"].round().astype(int)
-    
-    
-            st.subheader("⚠ Below 75% Attendance")
-    
-            def highlight_low(row):
-                return ["background-color: #ffcccc"] * len(row)
-    
-            styled_low = low.style.apply(highlight_low, axis=1)
-    
-            st.dataframe(styled_low, use_container_width=True)
-            
-            
-            #def attendance_color(val):
-                #if val < 75:
-               #     return "color: red; font-weight: bold"
-              #  else:
-             #       return "color: green; font-weight: bold"
-    
-            #styled = merged.style.applymap(
-              #  attendance_color,
-             #   subset=["Attendance_%"]
-            #)
-    
-            #st.dataframe(styled, use_container_width=True)
-    
-            # EXPORT CURRENT SUBJECT
-            csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Download Current Subject CSV",
-                csv_subject,
-                f"{subject}_attendance.csv",
-                "text/csv"
-            )
-    
-            # EXPORT ALL SUBJECTS
-            all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-            csv_all = all_data.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Download All Subjects CSV",
-                csv_all,
-                "all_attendance.csv",
-                "text/csv"
-            )
+        total_sessions = pd.read_sql_query("""
+            SELECT subject,
+                COUNT(DISTINCT DATE(expiry)) as Total_Classes
+            FROM sessions
+            GROUP BY subject
+        """, conn)
+        
+        #total_classes = total_classes_df["Total_Classes"][0]
+        
+        
+        attendance_count = attendance_df.groupby(
+            ["roll", "subject"]
+        ).size().reset_index(name="Classes_Attended")
+
+        merged = attendance_count.merge(total_sessions, on="subject")
+        merged["Attendance_%"] = (
+            merged["Classes_Attended"] /
+            merged["Total_Classes"] * 100
+        ).round(2)
+        
+        merged["Absent_Days"] = (
+            merged["Total_Classes"] - merged["Classes_Attended"]
+        )
+
+        # Prevent negative
+        merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
+
+        merged["Fine (₹)"] = merged["Absent_Days"] * 1
+
+        st.subheader("📊 Attendance % Summary")
+        st.dataframe(merged, use_container_width=True)
+
+        #fig = px.bar(merged, x="roll", y="Attendance_%")
+        fig = px.bar(
+            merged,
+            x="roll",
+            y="Attendance_%",
+            color="Attendance_%",
+            color_continuous_scale="Greens"
+        )
+
+
+        fig.update_layout(
+           plot_bgcolor="white",
+           paper_bgcolor="white",
+           title="Attendance Percentage by Student",
+           title_x=0.3
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        #low = merged[merged["Attendance_%"] < 75]
+        #st.subheader("⚠ Below 75% Attendance")
+        #st.dataframe(low)
+        
+        
+        #low = merged[merged["Attendance_%"] < 75]
+        low = merged[merged["Attendance_%"] < 75].copy()
+        low["Attendance_%"] = low["Attendance_%"].round().astype(int)
+
+
+        st.subheader("⚠ Below 75% Attendance")
+
+        def highlight_low(row):
+            return ["background-color: #ffcccc"] * len(row)
+
+        styled_low = low.style.apply(highlight_low, axis=1)
+
+        st.dataframe(styled_low, use_container_width=True)
+        
+        
+        #def attendance_color(val):
+            #if val < 75:
+           #     return "color: red; font-weight: bold"
+          #  else:
+         #       return "color: green; font-weight: bold"
+
+        #styled = merged.style.applymap(
+          #  attendance_color,
+         #   subset=["Attendance_%"]
+        #)
+
+        #st.dataframe(styled, use_container_width=True)
+
+        # EXPORT CURRENT SUBJECT
+        csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Current Subject CSV",
+            csv_subject,
+            f"{subject}_attendance.csv",
+            "text/csv"
+        )
+
+        # EXPORT ALL SUBJECTS
+        all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+        csv_all = all_data.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download All Subjects CSV",
+            csv_all,
+            "all_attendance.csv",
+            "text/csv"
+        )
 ##########################################################################################################################################
 
 # ============================================================
