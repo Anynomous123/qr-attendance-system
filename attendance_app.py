@@ -218,7 +218,7 @@ def faculty_login():
     if st.sidebar.button("Login"):
         users = st.secrets["FACULTY_USERS"]
         if user in users and users[user] == pwd:
-            st.session_state.logged_in = True
+            st.session_state.faculty_logged_in = True
             st.session_state.faculty_name = user
             st.sidebar.success("Login Successful")
         else:
@@ -229,8 +229,8 @@ if not st.session_state.faculty_logged_in:
 else:
     st.sidebar.success(f"Logged in as {st.session_state.faculty_name}")
     if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        #st.session_state.faculty_name = ""
+        st.session_state.faculty_logged_in = False
+        st.session_state.faculty_name = ""
 
 # ============================================================
 # UNIVERSITY BRANDED HEADER - GREEN THEME
