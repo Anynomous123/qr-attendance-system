@@ -742,10 +742,11 @@ if st.session_state.logged_in:
         )
 
 # ============================================================
-# STUDENT SECTION
+# STUDENT SECTION (PASS KEY BASED - FULLY INTEGRATED)
 # ============================================================
+
 st.divider()
-#st.header("Student Attendance")
+
 st.markdown("""
 ## 🎓 Student Attendance Portal
 <div style='background:linear-gradient(90deg,rgba(0, 123, 255, 0.7),rgba(0, 86, 179, 0.7));
@@ -753,107 +754,180 @@ padding:15px;
 border-radius:10px;
 color:white;
 font-size:18px;'>
-Scan the QR Code and Enter Your Roll Number
+Scan the QR Code → Enter Roll Number → Enter Classroom Pass Key
 </div>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# STUDENT LOGIN
-# ============================================================
+# ------------------ STEP 1: LOGIN ------------------
 
-if "student_roll" not in st.session_state:
-    st.session_state.student_roll = None
+if "student_logged_in" not in st.session_state:
+    st.session_state.student_logged_in = False
 
-if not st.session_state.student_roll:
-    roll_input = st.text_input("Enter Your Roll Number")
-    if st.button("Continue"):
-        if roll_input:
-            st.session_state.student_roll = roll_input.upper()
-            st.rerun()
-        else:
-            st.warning("Enter Roll Number")
+if not st.session_state.student_logged_in:
+    roll = st.text_input("Enter Your Roll Number")
+    if roll:
+        st.session_state.student_logged_in = True
+        st.session_state.roll = roll.upper()
+        st.success(f"Logged in as {roll}")
+    else:
+        st.warning("Please enter your Roll Number")
+        st.stop()
+
+roll = st.session_state.roll
+
+# ------------------ STEP 2: ENTER PASS KEY ------------------
+
+st.subheader("Enter Classroom Pass Key")
+passkey = st.text_input("Pass Key").upper()
+
+if not passkey:
     st.stop()
 
-roll = st.session_state.student_roll
+# ------------------ VALIDATE SESSION ------------------
+
+cursor.execute("SELECT * FROM sessions WHERE token=?", (passkey,))
+session = cursor.fetchone()
+
+if not session:
+    st.error("Invalid Pass Key")
+    st.stop()
+
+subject_db = session[1]
+expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+
+if now_ist() > expiry:
+    st.error("Pass Key Expired")
+    st.stop()
+
+# ------------------ LIVE COUNTER ------------------
+
+cursor.execute(
+    "SELECT COUNT(*) FROM attendance WHERE token=?",
+    (passkey,)
+)
+count = cursor.fetchone()[0]
+
+st.info(f"👥 Students Marked: {count}")
+
+if count >= 100:
+    st.error("Attendance Closed: 100 Students Reached")
+    st.stop()
+
+# ------------------ CHECK REGISTRATION ------------------
+
+cursor.execute(
+    "SELECT * FROM students WHERE roll=? AND subject=?",
+    (roll, subject_db)
+)
+registered = cursor.fetchone()
 
 # ============================================================
-# CHECK REGISTRATION
+# FIRST TIME REGISTRATION
 # ============================================================
 
-cursor.execute("SELECT * FROM students WHERE roll=?", (roll,))
-student = cursor.fetchone()
+if not registered:
 
-if not student:
     st.subheader("New Registration")
 
     name = st.text_input("Full Name")
     student_class = st.selectbox("Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"])
-    subject_input = st.text_input("Subject (As told by Teacher)")
+    gmail = st.text_input("Gmail Address")
+    mobile = st.text_input("Mobile Number")
 
-    if st.button("Register"):
-        if name and subject_input:
-            cursor.execute("""
-                INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)
-            """, (roll, name, student_class, "", "", subject_input))
+    if st.button("Register & Mark Attendance"):
+
+        today_date = now_ist().strftime("%Y-%m-%d")
+
+        # DAILY DUPLICATE CHECK
+        cursor.execute("""
+            SELECT 1 FROM attendance
+            WHERE roll=?
+            AND subject=?
+            AND DATE(timestamp)=?
+        """, (roll, subject_db, today_date))
+
+        if cursor.fetchone():
+            st.warning("⚠ Attendance already marked today for this subject!")
+            st.stop()
+
+        try:
+            cursor.execute(
+                "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
+                (roll, name, student_class, gmail, mobile, subject_db)
+            )
+
+            cursor.execute(
+                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                (
+                    roll,
+                    name,
+                    subject_db,
+                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                    passkey
+                )
+            )
+
             conn.commit()
-            st.success("Registered Successfully")
-            st.rerun()
-        else:
-            st.warning("Fill all fields")
 
-    st.stop()
+            send_email(
+                gmail,
+                "Attendance Confirmed",
+                f"Dear {name}, your attendance for {subject_db} is marked."
+            )
+
+            st.success("✅ Registered & Attendance Marked")
+
+        except sqlite3.IntegrityError:
+            st.warning("Already registered or attendance marked.")
 
 # ============================================================
-# ENTER PASS KEY
+# ALREADY REGISTERED STUDENT
 # ============================================================
 
-st.subheader("Enter Classroom Pass Key")
+else:
 
-passkey = st.text_input("Pass Key")
+    name = registered[1]
+    gmail = registered[3]
 
-if st.button("Mark Attendance"):
+    if st.button("Mark Attendance"):
 
-    cursor.execute("""
-        SELECT * FROM sessions WHERE token=?
-    """, (passkey.upper(),))
+        today_date = now_ist().strftime("%Y-%m-%d")
 
-    session = cursor.fetchone()
+        # DAILY DUPLICATE CHECK
+        cursor.execute("""
+            SELECT 1 FROM attendance
+            WHERE roll=?
+            AND subject=?
+            AND DATE(timestamp)=?
+        """, (roll, subject_db, today_date))
 
-    if not session:
-        st.error("Invalid Pass Key")
-        st.stop()
+        if cursor.fetchone():
+            st.warning("⚠ Attendance already marked today for this subject!")
+            st.stop()
 
-    subject_db = session[1]
-    expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+        try:
+            cursor.execute(
+                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                (
+                    roll,
+                    name,
+                    subject_db,
+                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                    passkey
+                )
+            )
+            conn.commit()
 
-    if now_ist() > expiry:
-        st.error("Pass Key Expired")
-        st.stop()
+            send_email(
+                gmail,
+                "Attendance Confirmed",
+                f"Dear {name}, your attendance for {subject_db} is marked."
+            )
 
-    # Prevent duplicate
-    cursor.execute("""
-        SELECT 1 FROM attendance
-        WHERE roll=? AND token=?
-    """, (roll, passkey.upper()))
+            st.success("✅ Attendance Marked Successfully")
 
-    if cursor.fetchone():
-        st.warning("Attendance Already Marked")
-        st.stop()
-
-    # Insert attendance
-    cursor.execute("""
-        INSERT INTO attendance VALUES (?, ?, ?, ?, ?)
-    """, (
-        roll,
-        student[1],
-        subject_db,
-        now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-        passkey.upper()
-    ))
-
-    conn.commit()
-
-    st.success("✅ Attendance Marked Successfully")
+        except sqlite3.IntegrityError:
+            st.warning("Attendance already marked.")
 
 st.markdown("""
 <hr style='border:1px solid rgba(0, 123, 255, 0.7);'>
