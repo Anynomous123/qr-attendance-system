@@ -428,14 +428,16 @@ if st.session_state.logged_in:
         conn.commit()
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
-        qr_data = f"{app_url}/?token={token}"
+        qr_data = app_url#f"{app_url}/?token={token}"
 
         qr = qrcode.make(qr_data)
         buf = io.BytesIO()
         qr.save(buf)
         buf.seek(0)
-
+        
         st.image(buf)
+        st.markdown(f"## 🔑 PASS KEY: `{token}`")
+        st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
         st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
         
     st.divider()
@@ -755,226 +757,104 @@ Scan the QR Code and Enter Your Roll Number
 </div>
 """, unsafe_allow_html=True)
 
-query = st.experimental_get_query_params()
-token = query.get("token", [None])[0]
+# ============================================================
+# STUDENT LOGIN
+# ============================================================
 
+if "student_roll" not in st.session_state:
+    st.session_state.student_roll = None
 
-if token:
+if not st.session_state.student_roll:
+    roll_input = st.text_input("Enter Your Roll Number")
+    if st.button("Continue"):
+        if roll_input:
+            st.session_state.student_roll = roll_input.upper()
+            st.rerun()
+        else:
+            st.warning("Enter Roll Number")
+    st.stop()
 
+roll = st.session_state.student_roll
 
-    cursor.execute("SELECT * FROM sessions WHERE token=?", (token,))
+# ============================================================
+# CHECK REGISTRATION
+# ============================================================
+
+cursor.execute("SELECT * FROM students WHERE roll=?", (roll,))
+student = cursor.fetchone()
+
+if not student:
+    st.subheader("New Registration")
+
+    name = st.text_input("Full Name")
+    student_class = st.selectbox("Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"])
+    subject_input = st.text_input("Subject (As told by Teacher)")
+
+    if st.button("Register"):
+        if name and subject_input:
+            cursor.execute("""
+                INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)
+            """, (roll, name, student_class, "", "", subject_input))
+            conn.commit()
+            st.success("Registered Successfully")
+            st.rerun()
+        else:
+            st.warning("Fill all fields")
+
+    st.stop()
+
+# ============================================================
+# ENTER PASS KEY
+# ============================================================
+
+st.subheader("Enter Classroom Pass Key")
+
+passkey = st.text_input("Pass Key")
+
+if st.button("Mark Attendance"):
+
+    cursor.execute("""
+        SELECT * FROM sessions WHERE token=?
+    """, (passkey.upper(),))
+
     session = cursor.fetchone()
 
+    if not session:
+        st.error("Invalid Pass Key")
+        st.stop()
+
+    subject_db = session[1]
+    expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+
+    if now_ist() > expiry:
+        st.error("Pass Key Expired")
+        st.stop()
+
+    # Prevent duplicate
+    cursor.execute("""
+        SELECT 1 FROM attendance
+        WHERE roll=? AND token=?
+    """, (roll, passkey.upper()))
+
+    if cursor.fetchone():
+        st.warning("Attendance Already Marked")
+        st.stop()
+
+    # Insert attendance
+    cursor.execute("""
+        INSERT INTO attendance VALUES (?, ?, ?, ?, ?)
+    """, (
+        roll,
+        student[1],
+        subject_db,
+        now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+        passkey.upper()
+    ))
+
+    conn.commit()
+
+    st.success("✅ Attendance Marked Successfully")
 
-    if session:
-
-
-        subject_db = session[1]
-        expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
-
-
-        if now_ist() > expiry:
-            st.error("QR Expired")
-            st.stop()
-            
-        # ================= LIVE COUNTER =================
-
-
-        cursor.execute(
-            "SELECT COUNT(*) FROM attendance WHERE token=?",
-            (token,)
-        )
-        count = cursor.fetchone()[0]
-
-
-        st.info(f"👥 Students Marked: {count}")
-
-
-        if count >= 100:
-            st.error("Attendance Closed: 100 Students Reached")
-            st.stop()
-
-
-        # ================= ROLL INPUT =================
-	# LOGIN / ROLL INPUT
-        #if  not st.session_state.get("logged_in", False):
-         #   roll = st.text_input("Enter Your Roll Number")
-         #   if roll:
-        #        st.session_state.roll = roll
-        #        st.session_state.logged_in = True
-        #        st.success(f"Logged in as {roll}")
-        #   else:
-        #        st.warning("Please enter your Roll Number to login")
-        #        st.stop()
-        #if not st.session_state.logged_in:
-         #   st.warning("Please login first")
-          #  st.stop()
-        # STUDENT LOGIN
-        if "student_logged_in" not in st.session_state:
-            st.session_state.student_logged_in = False
-
-        if not st.session_state.student_logged_in:
-            roll = st.text_input("Enter Your Roll Number")
-            if roll:
-                st.session_state.student_logged_in = True
-                st.session_state.roll = roll
-                st.success(f"Logged in as {roll}")
-            else:
-                st.warning("Please enter your Roll Number to login")
-                st.stop()
-
-        roll = st.session_state.get("roll")
-        #roll = st.text_input("Roll Number")
-        #roll = st.session_state.roll
-        #if not st.session_state.logged_in:
-         #   st.warning("Please login first")
-          #  st.stop()
-
-        #roll = st.session_state.get("roll")
-
-
-        if roll:
-
-
-            cursor.execute(
-                "SELECT * FROM students WHERE roll=? AND subject=?",
-                (roll, subject_db)
-            )
-            registered = cursor.fetchone()
-
-
-            # ================= FIRST TIME REGISTRATION =================
-            if not registered:
-
-
-                st.subheader("New Registration")
-
-
-                name = st.text_input("Full Name")
-                student_class = st.selectbox(
-                    "Class",
-                    ["B.Sc 1", "B.Sc 2", "B.Sc 3"]
-                )
-                gmail = st.text_input("Gmail Address")
-                mobile = st.text_input("Mobile Number")
-
-
-                if st.button("Register & Mark Attendance"):
-
-
-                    # 🔥 CHECK DAILY DUPLICATE
-                    today_date = now_ist().strftime("%Y-%m-%d")
-
-
-                    cursor.execute("""
-                        SELECT 1 FROM attendance
-                        WHERE roll=?
-                        AND subject=?
-                        AND DATE(timestamp)=?
-                    """, (roll, subject_db, today_date))
-
-
-                    if cursor.fetchone():
-                        st.warning("⚠ Attendance already marked today for this subject!")
-                        st.stop()
-
-
-                    try:
-                        cursor.execute(
-                            "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
-                            (roll, name, student_class, gmail, mobile, subject_db)
-                        )
-
-
-                        cursor.execute(
-                            "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
-                            (
-                                roll,
-                                name,
-                                subject_db,
-                                now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                                token
-                            )
-                        )
-
-
-                        conn.commit()
-
-
-                        send_email(
-                            gmail,
-                            "Attendance Confirmed",
-                            f"Dear {name}, your attendance is marked."
-                        )
-
-
-                        st.success("✅ Registered & Attendance Marked")
-                        st.session_state.roll = roll # 👈 ADD THIS
-
-
-                    except sqlite3.IntegrityError:
-                        st.warning("Already registered or attendance marked.")
-
-
-            # ================= ALREADY REGISTERED =================
-            else:
-
-
-                name = registered[1]
-                gmail = registered[3]
-
-
-                if st.button("Mark Attendance"):
-
-
-                    # 🔥 CHECK DAILY DUPLICATE (MAIN FIX)
-                    today_date = now_ist().strftime("%Y-%m-%d")
-
-
-                    cursor.execute("""
-                        SELECT 1 FROM attendance
-                        WHERE roll=?
-                        AND subject=?
-                        AND DATE(timestamp)=?
-                    """, (roll, subject_db, today_date))
-
-
-                    if cursor.fetchone():
-                        st.warning("⚠ Attendance already marked today for this subject!")
-                        st.stop()
-
-
-                    try:
-                        cursor.execute(
-                            "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
-                            (
-                                roll,
-                                name,
-                                subject_db,
-                                now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                                token
-                            )
-                        )
-                        conn.commit()
-
-
-                        send_email(
-                            gmail,
-                            "Attendance Confirmed",
-                            f"Dear {name}, your attendance is marked."
-                        )
-
-
-                        st.success("✅ Attendance Marked Successfully")
-
-
-                    except sqlite3.IntegrityError:
-                        st.warning("Attendance already marked.")
-
-
-        else:
-            st.error("Invalid QR Code.")
-        
 st.markdown("""
 <hr style='border:1px solid rgba(0, 123, 255, 0.7);'>
 <center style='color:rgba(0, 123, 255, 0.7); font-weight:bold;'>
