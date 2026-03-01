@@ -9,7 +9,9 @@ import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
 import sqlite3
-
+# ================= ROLE SELECTOR =================
+st.sidebar.title("Portal Access")
+portal = st.sidebar.radio("Select Portal", ["Faculty", "Student"])
 # ============================================================
 # PAGE CONFIG
 # ============================================================
@@ -199,205 +201,129 @@ def send_email(to_email, subject, body):
     except:
         pass
 
+###################################################################################################################
+
 # ============================================================
-# LOGIN SYSTEM
+# FACULTY SECTION
 # ============================================================
 
+if portal == "Faculty":
 
+    # ---------------- SESSION STATE INIT ----------------
+    if "faculty_logged_in" not in st.session_state:
+        st.session_state.faculty_logged_in = False
 
-if "faculty_logged_in" not in st.session_state:
-    st.session_state.faculty_logged_in = False
-if "faculty_name" not in st.session_state:
-    st.session_state.faculty_name = ""
+    if "faculty_name" not in st.session_state:
+        st.session_state.faculty_name = ""
 
-def faculty_login():
-    st.sidebar.subheader("Faculty Login")
-    user = st.sidebar.text_input("Username")
-    pwd = st.sidebar.text_input("Password", type="password")
+    # ---------------- LOGIN FUNCTION ----------------
+    def faculty_login():
+        st.sidebar.subheader("Faculty Login")
+        user = st.sidebar.text_input("Username")
+        pwd = st.sidebar.text_input("Password", type="password")
 
-    if st.sidebar.button("Login"):
-        users = st.secrets["FACULTY_USERS"]
-        if user in users and users[user] == pwd:
-            st.session_state.faculty_logged_in = True
-            st.session_state.faculty_name = user
-            st.sidebar.success("Login Successful")
-        else:
-            st.sidebar.error("Invalid Credentials")
+        if st.sidebar.button("Login"):
+            users = st.secrets["FACULTY_USERS"]
+            if user in users and users[user] == pwd:
+                st.session_state.faculty_logged_in = True
+                st.session_state.faculty_name = user
+                st.sidebar.success("Login Successful")
+                st.rerun()
+            else:
+                st.sidebar.error("Invalid Credentials")
 
-if not st.session_state.faculty_logged_in:
-    faculty_login()
-else:
+    # ---------------- LOGIN CHECK ----------------
+    if not st.session_state.faculty_logged_in:
+        faculty_login()
+        st.stop()   # 🚨 Stops only Faculty section safely
+
+    # ---------------- LOGGED IN ----------------
     st.sidebar.success(f"Logged in as {st.session_state.faculty_name}")
+
     if st.sidebar.button("Logout"):
         st.session_state.faculty_logged_in = False
         st.session_state.faculty_name = ""
+        st.rerun()
 
-# ============================================================
-# UNIVERSITY BRANDED HEADER - GREEN THEME
-# ============================================================
+    # ============================================================
+    # UNIVERSITY HEADER
+    # ============================================================
 
-
-st.markdown("""
-<style>
-.header-container {
-    background: linear-gradient(90deg, rgba(0, 123, 255, 0.7), rgba(0, 86, 179, 0.7));
-    padding: 20px;
-    border-radius: 10px;
-    color: white;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-header_col1, header_col2 = st.columns([1, 6])
-
-
-with header_col1:
-    st.image("logo.png", width=95)
-
-
-with header_col2:
     st.markdown("""
-    <div class="header-container">
-        <h1 style='margin-bottom:5px;'>
-        G. B. Pant Memorial Govt. College Rampur Bushahr 
-        </h1>
-        <h4 style='margin-top:0px;'>
-        Shimla 172001
-        </h4>
-        <p style='font-size:18px; margin-top:10px;'>
-        Department of Physics – QR Smart Attendance System
-        </p>
-    </div>
+    <style>
+    .header-container {
+        background: linear-gradient(90deg, rgba(0, 123, 255, 0.7), rgba(0, 86, 179, 0.7));
+        padding: 20px;
+        border-radius: 10px;
+        color: white;
+    }
+    </style>
     """, unsafe_allow_html=True)
 
+    header_col1, header_col2 = st.columns([1, 6])
 
-st.markdown("<br>", unsafe_allow_html=True)
+    with header_col1:
+        st.image("logo.png", width=95)
 
+    with header_col2:
+        st.markdown("""
+        <div class="header-container">
+            <h1 style='margin-bottom:5px;'>
+            G. B. Pant Memorial Govt. College Rampur Bushahr 
+            </h1>
+            <h4 style='margin-top:0px;'>Shimla 172001</h4>
+            <p style='font-size:18px; margin-top:10px;'>
+            Department of Physics – QR Smart Attendance System
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib import colors
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import pagesizes
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Image
-import io
-from datetime import datetime
+    st.markdown("<br>", unsafe_allow_html=True)
 
+    # ============================================================
+    # TEACHER DASHBOARD STARTS HERE
+    # ============================================================
 
-
-
-def generate_pdf(attendance_df, selected_class, subject, total_sessions, attendance_percent):
-
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=pagesizes.A4)
-    elements = []
-
-
-    styles = getSampleStyleSheet()
-
-
-    # University Header
-    elements.append(Paragraph(
-        "<b>G. B. Pant Memorial Govt. College</b>", styles['Title']))
-    elements.append(Paragraph(
-        "Rampur Bushahr, Shimla", styles['Normal']))
-    elements.append(Spacer(1, 0.2 * inch))
-
-
-    # Report Title
-    elements.append(Paragraph(
-        f"<b>Attendance Report</b>", styles['Heading2']))
-    elements.append(Spacer(1, 0.2 * inch))
-
-
-    # Report Details
-    elements.append(Paragraph(
-        f"Class: {selected_class}", styles['Normal']))
-    elements.append(Paragraph(
-        f"Subject: {subject}", styles['Normal']))
-    elements.append(Paragraph(
-        f"Total Sessions: {total_sessions}", styles['Normal']))
-    elements.append(Paragraph(
-        f"Attendance Percentage: {attendance_percent}%", styles['Normal']))
-    elements.append(Paragraph(
-        f"Generated On: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles['Normal']))
-
-
-    elements.append(Spacer(1, 0.3 * inch))
-
-
-    # Table Data
-    data = [attendance_df.columns.tolist()] + attendance_df.values.tolist()
-
-
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.green),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-    ]))
-
-
-    elements.append(table)
-
-
-    doc.build(elements)
-    buffer.seek(0)
-
-
-    return buffer
-# ============================================================
-# TEACHER PANEL
-# ============================================================
-st.sidebar.markdown("## 🎓 Faculty Dashboard")
-st.sidebar.markdown("---")
-if st.session_state.logged_in:
-
-    st.sidebar.header("Teacher Panel")
+    st.sidebar.markdown("## 🎓 Faculty Dashboard")
+    st.sidebar.markdown("---")
 
     selected_class = st.sidebar.selectbox(
         "Select Class",
         ["B.Sc 1", "B.Sc 2", "B.Sc 3"]
     )
-    # ================= SUBJECT MAPPING BY CLASS =================
+
     class_subjects = {
         "B.Sc 1": [
             "Mechanics (PHYS101TH)",
             "Electricity, Magnetism & EMT (PHYS102TH)",
             "Mechanics (PHYS101PR)",
-            "Electricity, Magnetism & EMT (PHYS102PR)"    
-         ],
-         "B.Sc 2": [
-             "Statistical & Thermal Physics (PHYS201TH)",
-             "Waves and Optics (PHYS202TH)",
-             "Computational Physics (PHYS204TH)",
-             "Electronic Circuits & Metwork Skills (PHYS205TH)",
-             "Statistical & Thermal Physics (PHYS201PR)",
-             "Waves and Optics (PHYS202PR)", 
-             "Computational Physics (PHYS204SE)", 
-             "Electronic Circuits & Metwork Skills (PHYS205SE)"
-         ],
-         "B.Sc 3": [
-             "Modern Physics (PHYS301TH)",
-             "Nuclear and Particle Physics (PHYS304TH)",
-             "Radiation Safety (PHYS307TH)",
-             "Renewable Energy and Energy Harvesting (PHYS310TH)",
-             "Modern Physics (PHYS301PR)", 
-             "Nuclear and Particle Physics (PHYS304TU)",  
-             "Radiation Safety (PHYS307SE)",
-             "Renewable Energy and Energy Harvesting (PHYS310TH)"
-         ]
+            "Electricity, Magnetism & EMT (PHYS102PR)"
+        ],
+        "B.Sc 2": [
+            "Statistical & Thermal Physics (PHYS201TH)",
+            "Waves and Optics (PHYS202TH)",
+            "Computational Physics (PHYS204TH)",
+            "Electronic Circuits & Metwork Skills (PHYS205TH)",
+            "Statistical & Thermal Physics (PHYS201PR)",
+            "Waves and Optics (PHYS202PR)",
+            "Computational Physics (PHYS204SE)",
+            "Electronic Circuits & Metwork Skills (PHYS205SE)"
+        ],
+        "B.Sc 3": [
+            "Modern Physics (PHYS301TH)",
+            "Nuclear and Particle Physics (PHYS304TH)",
+            "Radiation Safety (PHYS307TH)",
+            "Renewable Energy and Energy Harvesting (PHYS310TH)",
+            "Modern Physics (PHYS301PR)",
+            "Nuclear and Particle Physics (PHYS304TU)",
+            "Radiation Safety (PHYS307SE)",
+            "Renewable Energy and Energy Harvesting (PHYS310TH)"
+        ]
     }
-    
-    
+
     subjects = class_subjects[selected_class]
     subject = st.sidebar.selectbox("Select Subject", subjects)
+
     st.sidebar.markdown("---")
     st.sidebar.markdown(f"""
     ### 📘 Current Selection
@@ -405,17 +331,12 @@ if st.session_state.logged_in:
     - **Subject:** {subject}
     """)
 
-    duration = st.sidebar.number_input("QR Valid Duration (minutes)", 1, 60, 5)
-
-    # ================= GENERATE QR =================
     validity_seconds = st.slider(
         "Select QR Validity (seconds)",
-        min_value=10,
-        max_value=300, # 5 minutes
-        value=60,
-        step=10
+        10, 300, 60, 10
     )
-    
+
+    # ---------------- GENERATE QR ----------------
     if st.sidebar.button("Generate QR"):
 
         token = str(uuid.uuid4())
@@ -428,506 +349,595 @@ if st.session_state.logged_in:
         conn.commit()
 
         app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
-        qr_data = app_url#f"{app_url}/?token={token}"
 
-        qr = qrcode.make(qr_data)
+        qr = qrcode.make(app_url)
         buf = io.BytesIO()
         qr.save(buf)
         buf.seek(0)
-        
+
         st.image(buf)
         st.markdown(f"## 🔑 PASS KEY: `{token}`")
         st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
-        st.success(f"✅ QR Generated (Valid for {validity_seconds} seconds)")
-        
-    st.divider()
-    st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
+        st.success(f"QR Generated (Valid for {validity_seconds} seconds)")
 
-    with st.expander("➕ Create New Notice", expanded=True):
-
-        notice_title = st.text_input("Notice Title")
-        notice_content = st.text_area("Notice Description")
-        notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
-
-        if st.button("📢 Publish Notice"):
-
-            if notice_title and notice_content:
-                cursor.execute(
-                "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
-                (
-                    notice_title,
-                    notice_content,
-                    notice_link,
-                    now_ist().strftime("%Y-%m-%d %H:%M:%S")
-                )
-            )
-            conn.commit()
-
-            st.success("✅ Notice Published Successfully")
-            st.rerun()
-        else:
-            st.warning("Please fill Title and Description")
-        
-        
-    # ============================================================
-    # DELETE OLD NOTICES
-    # ============================================================
-
-    st.divider()
-    st.subheader("🗑 Manage / Delete Notices")
-
-    notices_df = pd.read_sql_query(
-        "SELECT * FROM notices ORDER BY id DESC",
-        conn
-    )
-
-    if not notices_df.empty:
-
-        for _, row in notices_df.iterrows():
-
-            col1, col2 = st.columns([6, 1])
-
-            with col1:
-                st.markdown(f"""
-                <div style="
-                    font-size: 12px;
-                    line-height: 1.2;
-                    padding: 4px 0;
-                ">
-                    <b>{row['title']}</b><br>
-                    {row['content']}<br>
-                    <span style="color:gray;">🕒 {row['timestamp']}</span>
-                </div>
-            """, unsafe_allow_html=True)
-
-            with col2:
-                st.markdown('<div class="small-delete">', unsafe_allow_html=True)
-                delete_clicked = st.button("❌", key=f"delete_{row['id']}")
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                if delete_clicked:
+###################################################################################################################
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import pagesizes
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Image
+    import io
+    from datetime import datetime
+    
+    
+    
+    
+    def generate_pdf(attendance_df, selected_class, subject, total_sessions, attendance_percent):
+    
+    
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=pagesizes.A4)
+        elements = []
+    
+    
+        styles = getSampleStyleSheet()
+    
+    
+        # University Header
+        elements.append(Paragraph(
+            "<b>G. B. Pant Memorial Govt. College</b>", styles['Title']))
+        elements.append(Paragraph(
+            "Rampur Bushahr, Shimla", styles['Normal']))
+        elements.append(Spacer(1, 0.2 * inch))
+    
+    
+        # Report Title
+        elements.append(Paragraph(
+            f"<b>Attendance Report</b>", styles['Heading2']))
+        elements.append(Spacer(1, 0.2 * inch))
+    
+    
+        # Report Details
+        elements.append(Paragraph(
+            f"Class: {selected_class}", styles['Normal']))
+        elements.append(Paragraph(
+            f"Subject: {subject}", styles['Normal']))
+        elements.append(Paragraph(
+            f"Total Sessions: {total_sessions}", styles['Normal']))
+        elements.append(Paragraph(
+            f"Attendance Percentage: {attendance_percent}%", styles['Normal']))
+        elements.append(Paragraph(
+            f"Generated On: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles['Normal']))
+    
+    
+        elements.append(Spacer(1, 0.3 * inch))
+    
+    
+        # Table Data
+        data = [attendance_df.columns.tolist()] + attendance_df.values.tolist()
+    
+    
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.green),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+    
+    
+        elements.append(table)
+    
+    
+        doc.build(elements)
+        buffer.seek(0)
+    
+    
+        return buffer
+    
+            
+        st.divider()
+        st.subheader("👩‍🏫 Teacher Panel – Publish Notice")
+    
+        with st.expander("➕ Create New Notice", expanded=True):
+    
+            notice_title = st.text_input("Notice Title")
+            notice_content = st.text_area("Notice Description")
+            notice_link = st.text_input("Optional Link (YouTube / PDF / PPT / Drive)")
+    
+            if st.button("📢 Publish Notice"):
+    
+                if notice_title and notice_content:
                     cursor.execute(
-                        "DELETE FROM notices WHERE id = ?",
-                        (row['id'],)
+                    "INSERT INTO notices (title, content, link, timestamp) VALUES (?, ?, ?, ?)",
+                    (
+                        notice_title,
+                        notice_content,
+                        notice_link,
+                        now_ist().strftime("%Y-%m-%d %H:%M:%S")
                     )
-                    conn.commit()
-                    st.rerun()
-
-            st.markdown("---")
-
-    else:
-        st.info("No notices available to delete.")
-
-
-    # ================= ANALYTICS =================
-    # Load ALL attendance for selected subject
-    #attendance_df = pd.read_sql_query(
-    #    "SELECT * FROM attendance WHERE subject=? ORDER BY date DESC, time DESC",
-    #    conn,
-    #    params=(subject,)
-    #)
-    attendance_df = pd.read_sql_query(
-        """
-        SELECT *,
-               DATE(timestamp) as session_date
-        FROM attendance
-        WHERE subject=?
-        ORDER BY timestamp DESC
-        """,
-        conn,
-        params=(subject,)
-    )
-
-    total_present = len(attendance_df)
-    # Count distinct session dates for that subject
-    sessions_count = attendance_df["session_date"].nunique()
-    #st.subheader("📋 Live Attendance Record")
-    #st.dataframe(attendance_df, use_container_width=True)
-    st.markdown("## 📊 Attendance Dashboard")
-
-
-    col1, col2, col3 = st.columns(3)
-
-
-    #total_present = len(attendance_df)
-    # Count total sessions ONLY for selected subject
-    sessions_df = pd.read_sql_query("""
-        SELECT COUNT(DISTINCT DATE(expiry)) as total
-        FROM sessions
-        WHERE subject=?
-    """, conn, params=(subject,))
-    #sessions_df = pd.read_sql_query("""
-     #   SELECT DISTINCT subject, DATE(expiry) as session_date
-      #  FROM sessions
-    #""", conn)
-
-    #total_sessions = len(sessions_df)
-    total_sessions = sessions_df["total"][0]
-    #st.metric("Total Sessions", total_sessions)
+                )
+                conn.commit()
     
-    #total_sessions = pd.read_sql_query(
-    #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
-    #    conn,
-    #    params=(subject,)
-    #)["total"][0]
-
+                st.success("✅ Notice Published Successfully")
+                st.rerun()
+            else:
+                st.warning("Please fill Title and Description")
+            
+            
+        # ============================================================
+        # DELETE OLD NOTICES
+        # ============================================================
     
-    # Calculate attendance per session
-    attendance_percent = 0
-    if total_sessions > 0:
-        attendance_percent = round(total_present / total_sessions, 2)
-    #attendance_percent = 0
-    #if total_sessions > 0 and total_present > 0:
-     #   attendance_percent = round((total_present / total_sessions), 2)
-
-
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Total Present</h3>
-            <h1 style="color:#198754;">{total_present}</h1>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Total Sessions</h3>
-            <h1 style="color:#0d6efd;">{sessions_count}</h1>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Avg_Attendance/Session</h3>
-            <h1 style="color:#dc3545;">{attendance_percent}</h1>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-
-    st.dataframe(attendance_df, use_container_width=True)
-
-
-    if not attendance_df.empty:
-        st.markdown("### 📥 Download PDF Report")
-
-
-        pdf_file = generate_pdf(
-            attendance_df,
-            selected_class,
-            subject,
-            total_sessions,
-            attendance_percent
+        st.divider()
+        st.subheader("🗑 Manage / Delete Notices")
+    
+        notices_df = pd.read_sql_query(
+            "SELECT * FROM notices ORDER BY id DESC",
+            conn
         )
-
-
-        st.download_button(
-            label="📄 Download Attendance Report (PDF)",
-            data=pdf_file,
-            file_name=f"{selected_class}_{subject}_Attendance_Report.pdf",
-            mime="application/pdf"
-        )
-
-        #total_sessions = pd.read_sql_query(
-        #    "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
-        #    conn
+    
+        if not notices_df.empty:
+    
+            for _, row in notices_df.iterrows():
+    
+                col1, col2 = st.columns([6, 1])
+    
+                with col1:
+                    st.markdown(f"""
+                    <div style="
+                        font-size: 12px;
+                        line-height: 1.2;
+                        padding: 4px 0;
+                    ">
+                        <b>{row['title']}</b><br>
+                        {row['content']}<br>
+                        <span style="color:gray;">🕒 {row['timestamp']}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+    
+                with col2:
+                    st.markdown('<div class="small-delete">', unsafe_allow_html=True)
+                    delete_clicked = st.button("❌", key=f"delete_{row['id']}")
+                    st.markdown('</div>', unsafe_allow_html=True)
+    
+                    if delete_clicked:
+                        cursor.execute(
+                            "DELETE FROM notices WHERE id = ?",
+                            (row['id'],)
+                        )
+                        conn.commit()
+                        st.rerun()
+    
+                st.markdown("---")
+    
+        else:
+            st.info("No notices available to delete.")
+    
+    
+        # ================= ANALYTICS =================
+        # Load ALL attendance for selected subject
+        #attendance_df = pd.read_sql_query(
+        #    "SELECT * FROM attendance WHERE subject=? ORDER BY date DESC, time DESC",
+        #    conn,
+        #    params=(subject,)
         #)
-        
-        total_sessions = pd.read_sql_query("""
-            SELECT subject,
-                COUNT(DISTINCT DATE(expiry)) as Total_Classes
+        attendance_df = pd.read_sql_query(
+            """
+            SELECT *,
+                   DATE(timestamp) as session_date
+            FROM attendance
+            WHERE subject=?
+            ORDER BY timestamp DESC
+            """,
+            conn,
+            params=(subject,)
+        )
+    
+        total_present = len(attendance_df)
+        # Count distinct session dates for that subject
+        sessions_count = attendance_df["session_date"].nunique()
+        #st.subheader("📋 Live Attendance Record")
+        #st.dataframe(attendance_df, use_container_width=True)
+        st.markdown("## 📊 Attendance Dashboard")
+    
+    
+        col1, col2, col3 = st.columns(3)
+    
+    
+        #total_present = len(attendance_df)
+        # Count total sessions ONLY for selected subject
+        sessions_df = pd.read_sql_query("""
+            SELECT COUNT(DISTINCT DATE(expiry)) as total
             FROM sessions
-            GROUP BY subject
-        """, conn)
+            WHERE subject=?
+        """, conn, params=(subject,))
+        #sessions_df = pd.read_sql_query("""
+         #   SELECT DISTINCT subject, DATE(expiry) as session_date
+          #  FROM sessions
+        #""", conn)
+    
+        #total_sessions = len(sessions_df)
+        total_sessions = sessions_df["total"][0]
+        #st.metric("Total Sessions", total_sessions)
         
-        #total_classes = total_classes_df["Total_Classes"][0]
+        #total_sessions = pd.read_sql_query(
+        #    "SELECT COUNT(*) as total FROM sessions WHERE subject=?",
+        #    conn,
+        #    params=(subject,)
+        #)["total"][0]
+    
         
-        
-        attendance_count = attendance_df.groupby(
-            ["roll", "subject"]
-        ).size().reset_index(name="Classes_Attended")
-
-        merged = attendance_count.merge(total_sessions, on="subject")
-        merged["Attendance_%"] = (
-            merged["Classes_Attended"] /
-            merged["Total_Classes"] * 100
-        ).round(2)
-        
-        merged["Absent_Days"] = (
-            merged["Total_Classes"] - merged["Classes_Attended"]
-        )
-
-        # Prevent negative
-        merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
-
-        merged["Fine (₹)"] = merged["Absent_Days"] * 1
-
-        st.subheader("📊 Attendance % Summary")
-        st.dataframe(merged, use_container_width=True)
-
-        #fig = px.bar(merged, x="roll", y="Attendance_%")
-        fig = px.bar(
-            merged,
-            x="roll",
-            y="Attendance_%",
-            color="Attendance_%",
-            color_continuous_scale="Greens"
-        )
-
-
-        fig.update_layout(
-           plot_bgcolor="white",
-           paper_bgcolor="white",
-           title="Attendance Percentage by Student",
-           title_x=0.3
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        #low = merged[merged["Attendance_%"] < 75]
-        #st.subheader("⚠ Below 75% Attendance")
-        #st.dataframe(low)
-        
-        
-        #low = merged[merged["Attendance_%"] < 75]
-        low = merged[merged["Attendance_%"] < 75].copy()
-        low["Attendance_%"] = low["Attendance_%"].round().astype(int)
-
-
-        st.subheader("⚠ Below 75% Attendance")
-
-        def highlight_low(row):
-            return ["background-color: #ffcccc"] * len(row)
-
-        styled_low = low.style.apply(highlight_low, axis=1)
-
-        st.dataframe(styled_low, use_container_width=True)
-        
-        
-        #def attendance_color(val):
-            #if val < 75:
-           #     return "color: red; font-weight: bold"
-          #  else:
-         #       return "color: green; font-weight: bold"
-
-        #styled = merged.style.applymap(
-          #  attendance_color,
-         #   subset=["Attendance_%"]
-        #)
-
-        #st.dataframe(styled, use_container_width=True)
-
-        # EXPORT CURRENT SUBJECT
-        csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download Current Subject CSV",
-            csv_subject,
-            f"{subject}_attendance.csv",
-            "text/csv"
-        )
-
-        # EXPORT ALL SUBJECTS
-        all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
-        csv_all = all_data.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download All Subjects CSV",
-            csv_all,
-            "all_attendance.csv",
-            "text/csv"
-        )
+        # Calculate attendance per session
+        attendance_percent = 0
+        if total_sessions > 0:
+            attendance_percent = round(total_present / total_sessions, 2)
+        #attendance_percent = 0
+        #if total_sessions > 0 and total_present > 0:
+         #   attendance_percent = round((total_present / total_sessions), 2)
+    
+    
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <h3>Total Present</h3>
+                <h1 style="color:#198754;">{total_present}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <h3>Total Sessions</h3>
+                <h1 style="color:#0d6efd;">{sessions_count}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+                <h3>Avg_Attendance/Session</h3>
+                <h1 style="color:#dc3545;">{attendance_percent}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    
+        st.markdown("<br>", unsafe_allow_html=True)
+    
+    
+        st.dataframe(attendance_df, use_container_width=True)
+    
+    
+        if not attendance_df.empty:
+            st.markdown("### 📥 Download PDF Report")
+    
+    
+            pdf_file = generate_pdf(
+                attendance_df,
+                selected_class,
+                subject,
+                total_sessions,
+                attendance_percent
+            )
+    
+    
+            st.download_button(
+                label="📄 Download Attendance Report (PDF)",
+                data=pdf_file,
+                file_name=f"{selected_class}_{subject}_Attendance_Report.pdf",
+                mime="application/pdf"
+            )
+    
+            #total_sessions = pd.read_sql_query(
+            #    "SELECT subject, COUNT(*) as Total_Classes FROM sessions GROUP BY subject",
+            #    conn
+            #)
+            
+            total_sessions = pd.read_sql_query("""
+                SELECT subject,
+                    COUNT(DISTINCT DATE(expiry)) as Total_Classes
+                FROM sessions
+                GROUP BY subject
+            """, conn)
+            
+            #total_classes = total_classes_df["Total_Classes"][0]
+            
+            
+            attendance_count = attendance_df.groupby(
+                ["roll", "subject"]
+            ).size().reset_index(name="Classes_Attended")
+    
+            merged = attendance_count.merge(total_sessions, on="subject")
+            merged["Attendance_%"] = (
+                merged["Classes_Attended"] /
+                merged["Total_Classes"] * 100
+            ).round(2)
+            
+            merged["Absent_Days"] = (
+                merged["Total_Classes"] - merged["Classes_Attended"]
+            )
+    
+            # Prevent negative
+            merged["Absent_Days"] = merged["Absent_Days"].clip(lower=0)
+    
+            merged["Fine (₹)"] = merged["Absent_Days"] * 1
+    
+            st.subheader("📊 Attendance % Summary")
+            st.dataframe(merged, use_container_width=True)
+    
+            #fig = px.bar(merged, x="roll", y="Attendance_%")
+            fig = px.bar(
+                merged,
+                x="roll",
+                y="Attendance_%",
+                color="Attendance_%",
+                color_continuous_scale="Greens"
+            )
+    
+    
+            fig.update_layout(
+               plot_bgcolor="white",
+               paper_bgcolor="white",
+               title="Attendance Percentage by Student",
+               title_x=0.3
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            #low = merged[merged["Attendance_%"] < 75]
+            #st.subheader("⚠ Below 75% Attendance")
+            #st.dataframe(low)
+            
+            
+            #low = merged[merged["Attendance_%"] < 75]
+            low = merged[merged["Attendance_%"] < 75].copy()
+            low["Attendance_%"] = low["Attendance_%"].round().astype(int)
+    
+    
+            st.subheader("⚠ Below 75% Attendance")
+    
+            def highlight_low(row):
+                return ["background-color: #ffcccc"] * len(row)
+    
+            styled_low = low.style.apply(highlight_low, axis=1)
+    
+            st.dataframe(styled_low, use_container_width=True)
+            
+            
+            #def attendance_color(val):
+                #if val < 75:
+               #     return "color: red; font-weight: bold"
+              #  else:
+             #       return "color: green; font-weight: bold"
+    
+            #styled = merged.style.applymap(
+              #  attendance_color,
+             #   subset=["Attendance_%"]
+            #)
+    
+            #st.dataframe(styled, use_container_width=True)
+    
+            # EXPORT CURRENT SUBJECT
+            csv_subject = attendance_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download Current Subject CSV",
+                csv_subject,
+                f"{subject}_attendance.csv",
+                "text/csv"
+            )
+    
+            # EXPORT ALL SUBJECTS
+            all_data = pd.read_sql_query("SELECT * FROM attendance", conn)
+            csv_all = all_data.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download All Subjects CSV",
+                csv_all,
+                "all_attendance.csv",
+                "text/csv"
+            )
+##########################################################################################################################################
 
 # ============================================================
 # STUDENT SECTION (PASS KEY BASED - FULLY INTEGRATED)
 # ============================================================
 
-st.divider()
+elif portal == "Student":   # ✅ VERY IMPORTANT LINE
 
-st.markdown("""
-## 🎓 Student Attendance Portal
-<div style='background:linear-gradient(90deg,rgba(0, 123, 255, 0.7),rgba(0, 86, 179, 0.7));
-padding:15px;
-border-radius:10px;
-color:white;
-font-size:18px;'>
-Scan the QR Code → Enter Roll Number → Enter Classroom Pass Key
-</div>
-""", unsafe_allow_html=True)
+    st.divider()
 
-# ------------------ STEP 1: LOGIN ------------------
+    st.markdown("""
+    ## 🎓 Student Attendance Portal
+    <div style='background:linear-gradient(90deg,rgba(0, 123, 255, 0.7),rgba(0, 86, 179, 0.7));
+    padding:15px;
+    border-radius:10px;
+    color:white;
+    font-size:18px;'>
+    Scan the QR Code → Enter Roll Number → Enter Classroom Pass Key
+    </div>
+    """, unsafe_allow_html=True)
 
-if "student_logged_in" not in st.session_state:
-    st.session_state.student_logged_in = False
+    # ------------------ STEP 1: LOGIN ------------------
 
-if not st.session_state.student_logged_in:
-    roll = st.text_input("Enter Your Roll Number")
-    if roll:
-        st.session_state.student_logged_in = True
-        st.session_state.roll = roll.upper()
-        st.success(f"Logged in as {roll}")
-    else:
-        st.warning("Please enter your Roll Number")
+    if "student_logged_in" not in st.session_state:
+        st.session_state.student_logged_in = False
+
+    if not st.session_state.student_logged_in:
+        roll = st.text_input("Enter Your Roll Number")
+        if roll:
+            st.session_state.student_logged_in = True
+            st.session_state.roll = roll.upper()
+            st.success(f"Logged in as {roll}")
+            st.rerun()
+        else:
+            st.warning("Please enter your Roll Number")
+            st.stop()
+
+    roll = st.session_state.roll
+
+    # ------------------ STEP 2: ENTER PASS KEY ------------------
+
+    st.subheader("Enter Classroom Pass Key")
+    passkey = st.text_input("Pass Key")
+    passkey = passkey.strip().upper()
+
+    if not passkey:
         st.stop()
 
-roll = st.session_state.roll
+    # ------------------ VALIDATE SESSION ------------------
 
-# ------------------ STEP 2: ENTER PASS KEY ------------------
+    cursor.execute(
+        "SELECT * FROM sessions WHERE UPPER(token)=?",
+        (passkey,)
+    )
+    session = cursor.fetchone()
 
-st.subheader("Enter Classroom Pass Key")
-passkey = st.text_input("Pass Key").upper()
+    if not session:
+        st.error("Invalid Pass Key")
+        st.stop()
 
-if not passkey:
-    st.stop()
+    subject_db = session[1]
+    expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
 
-# ------------------ VALIDATE SESSION ------------------
+    if now_ist() > expiry:
+        st.error("Pass Key Expired")
+        st.stop()
 
-cursor.execute("SELECT * FROM sessions WHERE token=?", (passkey,))
-session = cursor.fetchone()
+    # ------------------ LIVE COUNTER ------------------
 
-if not session:
-    st.error("Invalid Pass Key")
-    st.stop()
+    cursor.execute(
+        "SELECT COUNT(*) FROM attendance WHERE UPPER(token)=?",
+        (passkey,)
+    )
+    count = cursor.fetchone()[0]
 
-subject_db = session[1]
-expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+    st.info(f"👥 Students Marked: {count}")
 
-if now_ist() > expiry:
-    st.error("Pass Key Expired")
-    st.stop()
+    if count >= 100:
+        st.error("Attendance Closed: 100 Students Reached")
+        st.stop()
 
-# ------------------ LIVE COUNTER ------------------
+    # ------------------ CHECK REGISTRATION ------------------
 
-cursor.execute(
-    "SELECT COUNT(*) FROM attendance WHERE UPPER(token)=?",
-    (passkey,)
-)
-count = cursor.fetchone()[0]
+    cursor.execute(
+        "SELECT * FROM students WHERE roll=? AND subject=?",
+        (roll, subject_db)
+    )
+    registered = cursor.fetchone()
 
-st.info(f"👥 Students Marked: {count}")
+    # ============================================================
+    # FIRST TIME REGISTRATION
+    # ============================================================
 
-if count >= 100:
-    st.error("Attendance Closed: 100 Students Reached")
-    st.stop()
+    if not registered:
 
-# ------------------ CHECK REGISTRATION ------------------
+        st.subheader("New Registration")
 
-cursor.execute(
-    "SELECT * FROM students WHERE roll=? AND subject=?",
-    (roll, subject_db)
-)
-registered = cursor.fetchone()
+        name = st.text_input("Full Name")
+        student_class = st.selectbox("Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"])
+        gmail = st.text_input("Gmail Address")
+        mobile = st.text_input("Mobile Number")
 
-# ============================================================
-# FIRST TIME REGISTRATION
-# ============================================================
+        if st.button("Register & Mark Attendance"):
 
-if not registered:
+            today_date = now_ist().strftime("%Y-%m-%d")
 
-    st.subheader("New Registration")
+            cursor.execute("""
+                SELECT 1 FROM attendance
+                WHERE roll=?
+                AND subject=?
+                AND DATE(timestamp)=?
+            """, (roll, subject_db, today_date))
 
-    name = st.text_input("Full Name")
-    student_class = st.selectbox("Class", ["B.Sc 1", "B.Sc 2", "B.Sc 3"])
-    gmail = st.text_input("Gmail Address")
-    mobile = st.text_input("Mobile Number")
+            if cursor.fetchone():
+                st.warning("⚠ Attendance already marked today for this subject!")
+                st.stop()
 
-    if st.button("Register & Mark Attendance"):
-
-        today_date = now_ist().strftime("%Y-%m-%d")
-
-        # DAILY DUPLICATE CHECK
-        cursor.execute("""
-            SELECT 1 FROM attendance
-            WHERE roll=?
-            AND subject=?
-            AND DATE(timestamp)=?
-        """, (roll, subject_db, today_date))
-
-        if cursor.fetchone():
-            st.warning("⚠ Attendance already marked today for this subject!")
-            st.stop()
-
-        try:
-            cursor.execute(
-                "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
-                (roll, name, student_class, gmail, mobile, subject_db)
-            )
-
-            cursor.execute(
-                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
-                (
-                    roll,
-                    name,
-                    subject_db,
-                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                    passkey
+            try:
+                cursor.execute(
+                    "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?)",
+                    (roll, name, student_class, gmail, mobile, subject_db)
                 )
-            )
 
-            conn.commit()
-
-            send_email(
-                gmail,
-                "Attendance Confirmed",
-                f"Dear {name}, your attendance for {subject_db} is marked."
-            )
-
-            st.success("✅ Registered & Attendance Marked")
-
-        except sqlite3.IntegrityError:
-            st.warning("Already registered or attendance marked.")
-
-# ============================================================
-# ALREADY REGISTERED STUDENT
-# ============================================================
-
-else:
-
-    name = registered[1]
-    gmail = registered[3]
-
-    if st.button("Mark Attendance"):
-
-        today_date = now_ist().strftime("%Y-%m-%d")
-
-        # DAILY DUPLICATE CHECK
-        cursor.execute("""
-            SELECT 1 FROM attendance
-            WHERE roll=?
-            AND subject=?
-            AND DATE(timestamp)=?
-        """, (roll, subject_db, today_date))
-
-        if cursor.fetchone():
-            st.warning("⚠ Attendance already marked today for this subject!")
-            st.stop()
-
-        try:
-            cursor.execute(
-                "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
-                (
-                    roll,
-                    name,
-                    subject_db,
-                    now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                    passkey
+                cursor.execute(
+                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                    (
+                        roll,
+                        name,
+                        subject_db,
+                        now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                        passkey
+                    )
                 )
-            )
-            conn.commit()
 
-            send_email(
-                gmail,
-                "Attendance Confirmed",
-                f"Dear {name}, your attendance for {subject_db} is marked."
-            )
+                conn.commit()
 
-            st.success("✅ Attendance Marked Successfully")
+                send_email(
+                    gmail,
+                    "Attendance Confirmed",
+                    f"Dear {name}, your attendance for {subject_db} is marked."
+                )
 
-        except sqlite3.IntegrityError:
-            st.warning("Attendance already marked.")
+                st.success("✅ Registered & Attendance Marked")
+                st.rerun()
+
+            except sqlite3.IntegrityError:
+                st.warning("Already registered or attendance marked.")
+
+    # ============================================================
+    # ALREADY REGISTERED STUDENT
+    # ============================================================
+
+    else:
+
+        name = registered[1]
+        gmail = registered[3]
+
+        if st.button("Mark Attendance"):
+
+            today_date = now_ist().strftime("%Y-%m-%d")
+
+            cursor.execute("""
+                SELECT 1 FROM attendance
+                WHERE roll=?
+                AND subject=?
+                AND DATE(timestamp)=?
+            """, (roll, subject_db, today_date))
+
+            if cursor.fetchone():
+                st.warning("⚠ Attendance already marked today for this subject!")
+                st.stop()
+
+            try:
+                cursor.execute(
+                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                    (
+                        roll,
+                        name,
+                        subject_db,
+                        now_ist().strftime("%Y-%m-%d %H:%M:%S"),
+                        passkey
+                    )
+                )
+                conn.commit()
+
+                send_email(
+                    gmail,
+                    "Attendance Confirmed",
+                    f"Dear {name}, your attendance for {subject_db} is marked."
+                )
+
+                st.success("✅ Attendance Marked Successfully")
+                st.rerun()
+
+            except sqlite3.IntegrityError:
+                st.warning("Attendance already marked.")
+
+#############################################################################################################################################
 
 st.markdown("""
 <hr style='border:1px solid rgba(0, 123, 255, 0.7);'>
