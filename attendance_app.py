@@ -230,7 +230,7 @@ else:
     st.sidebar.success(f"Logged in as {st.session_state.faculty_name}")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
-        st.session_state.faculty_name = ""
+        #st.session_state.faculty_name = ""
 
 # ============================================================
 # UNIVERSITY BRANDED HEADER - GREEN THEME
