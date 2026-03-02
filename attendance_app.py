@@ -1058,13 +1058,14 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
                 )
 
                 cursor.execute(
-                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         roll,
                         name,
                         subject_db,
                         now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                        passkey
+                        passkey,
+                        "Present"
                     )
                 )
 
@@ -1108,13 +1109,14 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
 
             try:
                 cursor.execute(
-                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         roll,
                         name,
                         subject_db,
                         now_ist().strftime("%Y-%m-%d %H:%M:%S"),
-                        passkey
+                        passkey,
+                        "Present"
                     )
                 )
                 conn.commit()
