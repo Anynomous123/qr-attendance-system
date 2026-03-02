@@ -10,7 +10,7 @@ import plotly.express as px
 import smtplib
 from email.mime.text import MIMEText
 import sqlite3
-
+from streamlit_autorefresh import st_autorefresh
 # PAGE CONFIG
 # ============================================================
 if "logged_in" not in st.session_state:
@@ -927,8 +927,8 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
 
     # ------------------ STEP 1: LOGIN ------------------
 
-    if "student_logged_in" not in st.session_state:
-        st.session_state.student_logged_in = False
+    #if "student_logged_in" not in st.session_state:
+    #    st.session_state.student_logged_in = False
 
     if not st.session_state.student_logged_in:
         roll = st.text_input("Enter Your Roll Number")
@@ -942,7 +942,8 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
             st.stop()
 
     roll = st.session_state.roll
-
+    if "attendance_done" not in st.session_state:
+        st.session_state.attendance_done = False
     # ------------------ STEP 2: ENTER PASS KEY ------------------
 
     #st.subheader("Enter Classroom Pass Key")
@@ -972,29 +973,50 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
     real_token = active_session[0]   # assuming token is 4th column
     
     # ================= BIG LIVE TIMER =================
+    if not st.session_state.attendance_done:
+        st_autorefresh(interval=1000, key="timerrefresh") 
+    
     
     remaining_seconds = int((expiry - now_ist()).total_seconds())
-    
-    timer_placeholder = st.empty()
-    
-    if remaining_seconds > 0:
-    
-        mins, secs = divmod(remaining_seconds, 60)
-    
-        timer_placeholder.markdown(f"""
-        <div style="
-            text-align:center;
-            font-size:90px;
-            font-weight:bold;
-            color:#dc3545;
-        ">
-        ⏳ {mins:02d}:{secs:02d}
-        </div>
-        """, unsafe_allow_html=True)
-    
-    else:
+
+    if remaining_seconds <= 0:
         st.error("⛔ Attendance Session Expired")
         st.stop()
+
+    mins, secs = divmod(remaining_seconds, 60)
+
+    st.markdown(f"""
+    <div style="
+        text-align:center;
+        font-size:90px;
+        font-weight:bold;
+        color:#dc3545;
+    ">
+    ⏳ {mins:02d}:{secs:02d}
+    </div>
+    """, unsafe_allow_html=True)
+    #remaining_seconds = int((expiry - now_ist()).total_seconds())
+    
+    #timer_placeholder = st.empty()
+    
+    #if remaining_seconds > 0:
+    
+     #   mins, secs = divmod(remaining_seconds, 60)
+    
+      #  timer_placeholder.markdown(f"""
+       # <div style="
+        #    text-align:center;
+         #   font-size:90px;
+          #  font-weight:bold;
+           # color:#dc3545;
+       # ">
+       # ⏳ {mins:02d}:{secs:02d}
+       # </div>
+       # """, unsafe_allow_html=True)
+    
+    #else:
+    #    st.error("⛔ Attendance Session Expired")
+    #    st.stop()
     
     # ------------------ STEP 3: ENTER PASS KEY ------------------
     
@@ -1025,33 +1047,33 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
     
     # ================= LIVE COUNTDOWN TIMER =================
 
-    remaining_seconds = int((expiry - now_ist()).total_seconds())
+   # remaining_seconds = int((expiry - now_ist()).total_seconds())
 
-    if remaining_seconds > 0:
+    #if remaining_seconds > 0:
 
-        timer_placeholder = st.empty()
+     #   timer_placeholder = st.empty()
 
-        while remaining_seconds > 0:
+     #   while remaining_seconds > 0:
 
-            mins, secs = divmod(remaining_seconds, 60)
+      #      mins, secs = divmod(remaining_seconds, 60)
 
-            timer_placeholder.markdown(f"""
-            <div style="
-                text-align:center;
-                font-size:80px;
-                font-weight:bold;
-                color:#dc3545;
-                animation: pulse 1s infinite;
-            ">
-            ⏳ {mins:02d}:{secs:02d}
-            </div>
-            """, unsafe_allow_html=True)
+       #     timer_placeholder.markdown(f"""
+       #     <div style="
+       #         text-align:center;
+       #         font-size:80px;
+       #         font-weight:bold;
+        #        color:#dc3545;
+       #         animation: pulse 1s infinite;
+       #     ">
+        #    ⏳ {mins:02d}:{secs:02d}
+        #    </div>
+        #    """, unsafe_allow_html=True)
 
-            time.sleep(1)
-            remaining_seconds -= 1
+         #   time.sleep(1)
+         #   remaining_seconds -= 1
 
-        st.error("⛔ Time Expired! Attendance Closed.")
-        st.stop()
+        #st.error("⛔ Time Expired! Attendance Closed.")
+        #st.stop()
 
     if now_ist() > expiry:
         st.error("Pass Key Expired")
@@ -1134,6 +1156,7 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
                 )
 
                 st.success("✅ Registered & Attendance Marked")
+                st.session_state.attendance_done = True
                 st.rerun()
 
             except sqlite3.IntegrityError:
@@ -1184,6 +1207,7 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
                 )
 
                 st.success("✅ Attendance Marked Successfully")
+                st.session_state.attendance_done = True
                 st.rerun()
 
             except sqlite3.IntegrityError:
