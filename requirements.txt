@@ -7,3 +7,4 @@ google-auth
 plotly
 reportlab
 streamlit-javascript
+streamlit-autorefresh
