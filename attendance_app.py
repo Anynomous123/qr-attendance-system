@@ -969,7 +969,7 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
     
     subject_db = active_session[1]
     expiry = datetime.strptime(active_session[2], "%Y-%m-%d %H:%M:%S")
-    real_token = active_session[3]   # assuming token is 4th column
+    real_token = active_session[0]   # assuming token is 4th column
     
     # ================= BIG LIVE TIMER =================
     
