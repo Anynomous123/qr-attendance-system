@@ -3,6 +3,7 @@ import qrcode
 import pandas as pd
 import uuid
 import io
+import time
 from datetime import datetime, timedelta, date
 today = date.today()
 import plotly.express as px
@@ -217,6 +218,12 @@ def send_email(to_email, subject, body):
 
 if portal == "Faculty":
 
+    if "active_qr_token" not in st.session_state:
+        st.session_state.active_qr_token = None
+
+    if "active_qr_expiry" not in st.session_state:
+        st.session_state.active_qr_expiry = None
+
     # ---------------- SESSION STATE INIT ----------------
     if "faculty_logged_in" not in st.session_state:
         st.session_state.faculty_logged_in = False
@@ -355,18 +362,49 @@ if portal == "Faculty":
             (token, subject, expiry.strftime("%Y-%m-%d %H:%M:%S"))
         )
         conn.commit()
+            
+        # Save in session state
+        st.session_state.active_qr_token = token
+        st.session_state.active_qr_expiry = expiry
+        
+        # ================= SHOW ACTIVE QR =================
 
-        app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
+        if st.session_state.active_qr_token:
 
-        qr = qrcode.make(app_url)
-        buf = io.BytesIO()
-        qr.save(buf)
-        buf.seek(0)
+            expiry = st.session_state.active_qr_expiry
 
-        st.image(buf)
-        st.markdown(f"## 🔑 PASS KEY: `{token}`")
-        st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
-        st.success(f"QR Generated (Valid for {validity_seconds} seconds)")
+            if now_ist() < expiry:
+
+                app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
+
+                qr = qrcode.make(app_url)
+                buf = io.BytesIO()
+                qr.save(buf)
+                buf.seek(0)
+
+                st.image(buf)
+
+                st.markdown(f"## 🔑 PASS KEY: `{st.session_state.active_qr_token}`")
+                st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
+
+            else:
+                st.warning("QR Session Expired")
+                st.session_state.active_qr_token = None
+                st.session_state.active_qr_expiry = None
+        
+        
+
+        #app_url = "https://qr-attendance-system-ngubz54ivcsykf753qfbdk.streamlit.app"
+
+        #qr = qrcode.make(app_url)
+        #buf = io.BytesIO()
+        #qr.save(buf)
+        #buf.seek(0)
+
+        #st.image(buf)
+        #st.markdown(f"## 🔑 PASS KEY: `{token}`")
+        #st.info(f"Valid till {expiry.strftime('%H:%M:%S')}")
+        #st.success(f"QR Generated (Valid for {validity_seconds} seconds)")
         
     st.divider()
     st.subheader("✏ Manual Attendance Management")
@@ -928,6 +966,36 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
 
     subject_db = session[1]
     expiry = datetime.strptime(session[2], "%Y-%m-%d %H:%M:%S")
+    
+    # ================= LIVE COUNTDOWN TIMER =================
+
+    remaining_seconds = int((expiry - now_ist()).total_seconds())
+
+    if remaining_seconds > 0:
+
+        timer_placeholder = st.empty()
+
+        while remaining_seconds > 0:
+
+            mins, secs = divmod(remaining_seconds, 60)
+
+            timer_placeholder.markdown(f"""
+            <div style="
+                text-align:center;
+                font-size:80px;
+                font-weight:bold;
+                color:#dc3545;
+                animation: pulse 1s infinite;
+            ">
+            ⏳ {mins:02d}:{secs:02d}
+            </div>
+            """, unsafe_allow_html=True)
+
+            time.sleep(1)
+            remaining_seconds -= 1
+
+        st.error("⛔ Time Expired! Attendance Closed.")
+        st.stop()
 
     if now_ist() > expiry:
         st.error("Pass Key Expired")
