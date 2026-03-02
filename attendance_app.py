@@ -945,11 +945,67 @@ elif portal == "Student":   # ✅ VERY IMPORTANT LINE
 
     # ------------------ STEP 2: ENTER PASS KEY ------------------
 
-    st.subheader("Enter Classroom Pass Key")
-    passkey = st.text_input("Pass Key")
-    passkey = passkey.strip().upper()
+    #st.subheader("Enter Classroom Pass Key")
+    #passkey = st.text_input("Pass Key")
+    #passkey = passkey.strip().upper()
 
+    #if not passkey:
+    #    st.stop()
+
+    # ------------------ STEP 2: FETCH ACTIVE SESSION ------------------
+    
+    cursor.execute("""
+        SELECT * FROM sessions
+        WHERE expiry > ?
+        ORDER BY expiry DESC
+        LIMIT 1
+    """, (now_ist().strftime("%Y-%m-%d %H:%M:%S"),))
+    
+    active_session = cursor.fetchone()
+    
+    if not active_session:
+        st.error("No Active Attendance Session")
+        st.stop()
+    
+    subject_db = active_session[1]
+    expiry = datetime.strptime(active_session[2], "%Y-%m-%d %H:%M:%S")
+    real_token = active_session[3]   # assuming token is 4th column
+    
+    # ================= BIG LIVE TIMER =================
+    
+    remaining_seconds = int((expiry - now_ist()).total_seconds())
+    
+    timer_placeholder = st.empty()
+    
+    if remaining_seconds > 0:
+    
+        mins, secs = divmod(remaining_seconds, 60)
+    
+        timer_placeholder.markdown(f"""
+        <div style="
+            text-align:center;
+            font-size:90px;
+            font-weight:bold;
+            color:#dc3545;
+        ">
+        ⏳ {mins:02d}:{secs:02d}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    else:
+        st.error("⛔ Attendance Session Expired")
+        st.stop()
+    
+    # ------------------ STEP 3: ENTER PASS KEY ------------------
+    
+    st.subheader("Enter Classroom Pass Key")
+    passkey = st.text_input("Pass Key").strip().upper()
+    
     if not passkey:
+        st.stop()
+    
+    if passkey != real_token.upper():
+        st.error("Invalid Pass Key")
         st.stop()
 
     # ------------------ VALIDATE SESSION ------------------
